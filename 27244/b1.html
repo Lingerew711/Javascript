@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content content="width=device-width, initial-scale=1.0">
+<title>Cyclist Direction Guide</title>
+<style>
+    body {
+        background-color: #1a1a1a;
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+        margin: 0;
+    }
+    #directionLabel {
+        color: #00FFFF; /* Electricity Blue */
+        font-size: 24px;
+        margin-bottom: 20px;
+        text-align: center;
+        width: 100%;
+        animation: zoomFade 0.5s ease-out;
+    }
+    .button-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        max-width: 440px; /* Assuming 20px margin on both sides */
+        width: 100%;
+    }
+    .direction-btn {
+        background-color: #00FFFF;
+        border: none;
+        border-radius: 4px;
+        height: 200px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        transition: transform 0.1s;
+    }
+    .direction-btn:active {
+        transform: scale(0.95);
+    }
+    .icon {
+        width: 50px;
+        height: 50px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+    }
+    @keyframes zoomFade {
+        from { transform: scale(0.5); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+</style>
+</head>
+<body>
+
+<div id="directionLabel"></div>
+
+<div class="button-grid">
+    <button class="direction-btn" onclick="giveDirection(['Left', 'Right', 'Straight'])">
+        <div class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4l-8 8h6v8h4v-8h6l-8-8z"/></svg>');"></div>
+    </button>
+    <button class="direction-btn" onclick="giveDirection(['Left', 'Straight'])">
+        <div class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4l-8 8h16v-8z"/></svg>');"></div>
+    </button>
+    <button class="direction-btn" onclick="giveDirection(['Right', 'Straight'])">
+        <div class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4v16l8-8h-16z"/></svg>');"></div>
+    </button>
+    <button class="direction-btn" onclick="giveDirection(['Left', 'Right'])">
+        <div class="icon" style="background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 4l-8 8 8 8 8-8-8-8z"/></svg>');"></div>
+    </button>
+</div>
+
+<script>
+    function giveDirection(options) {
+        const label = document.getElementById('directionLabel');
+        const direction = options[Math.floor(Math.random() * options.length)];
+        label.textContent = direction;
+        label.style.animation = 'none'; // Reset animation
+        void label.offsetWidth; // Trigger reflow
+        label.style.animation = 'zoomFade 0.5s ease-out'; // Restart animation
+    }
+</script>
+
+</body>
+</html>
