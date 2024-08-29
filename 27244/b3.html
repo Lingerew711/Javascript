@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Random Cyclist Turn Direction</title>
+<style>
+  /* Your existing styles remain unchanged */
+  body {
+    background-color: #333;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  .label {
+    color: #03A9F4;
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    transition: transform 0.5s, opacity 0.5s;
+  }
+  .button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: calc(100% - 40px);
+  }
+  button {
+    background-color: #03A9F4;
+    border: none;
+    padding: 15px;
+    height: 200px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  button:hover {
+    transform: scale(1.05);
+  }
+  button:active {
+    transform: scale(0.95);
+  }
+  .icon {
+    width: 32px;
+    height: 32px;
+  }
+  .icon svg {
+    fill: none;
+    stroke: black;
+    stroke-width: 2;
+  }
+</style>
+</head>
+<body>
+<div class="label" id="directionLabel"></div>
+<div class="button-grid">
+  <!-- Your buttons with SVG icons here -->
+</div>
+
+<audio id="audioLeft" src="left.wav"></audio>
+<audio id="audioRight" src="right.wav"></audio>
+<audio id="audioStraight" src="straight.wav"></audio>
+
+<script>
+  const directions = {
+    'left, straight, right': ['left', 'straight', 'right'],
+    'left, straight': ['left', 'straight'],
+    'right, straight': ['right', 'straight'],
+    'left, right': ['left', 'right'],
+  };
+
+  function playSound(direction) {
+    let audio;
+    switch(direction) {
+      case 'left':
+        audio = document.getElementById('audioLeft');
+        break;
+      case 'right':
+        audio = document.getElementById('audioRight');
+        break;
+      case 'straight':
+        audio = document.getElementById('audioStraight');
+        break;
+    }
+    if (audio && audio.paused) {
+      audio.currentTime = 0; // Reset if it was played before
+      audio.play();
+    } else if (!audio.paused) {
+      // If sound is already playing, stop and restart
+      audio.pause();
+      audio.currentTime = 0;
+      audio.play();
+    }
+  }
+
+  function randomizeDirection(options) {
+    const label = document.getElementById('directionLabel');
+    const possibleDirections = directions[options];
+    const randomIndex = Math.floor(Math.random() * possibleDirections.length);
+    const direction = possibleDirections[randomIndex];
+
+    label.style.transform = 'scale(0.5)';
+    label.style.opacity = '0';
+
+    // Play sound before updating the text to ensure timing
+    playSound(direction);
+
+    setTimeout(() => {
+      label.textContent = `Go ${direction}!`;
+      label.style.transform = 'scale(1)';
+      label.style.opacity = '1';
+    }, 500);
+  }
+
+  // Here you would initialize your buttons with onclick events calling randomizeDirection
+</script>
+</body>
+</html>
