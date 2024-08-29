@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dynamic Dashboard</title>
+<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<style>
+    #dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        padding: 10px;
+    }
+    .panel {
+        background: #f0f0f0;
+        border: 1px solid #ccc;
+        padding: 10px;
+        min-height: 100px;
+        position: relative;
+    }
+    .panel .ui-resizable-handle {
+        background: #ddd;
+        border: 1px solid #bbb;
+        width: 7px;
+        height: 7px;
+        position: absolute;
+    }
+    .ui-resizable-se {
+        right: -5px;
+        bottom: -5px;
+    }
+    #addPanelBtn {
+        margin: 10px;
+    }
+</style>
+</head>
+<body>
+
+<button id="addPanelBtn">Add Panel</button>
+<div id="dashboard"></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script>
+$(function() {
+    // Function to create a new panel
+    function createPanel(type = 'text') {
+        let panel = $('<div class="panel ui-widget-content">' + 
+                      (type === 'text' ? 'Edit Me' : 'Chart Placeholder') + 
+                      '</div>');
+        panel.appendTo('#dashboard').resizable({
+            handles: 'se'
+        }).draggable({
+            handle: '.panel',
+            containment: '#dashboard'
+        });
+    }
+
+    // Add panel button
+    $('#addPanelBtn').on('click', function() {
+        createPanel();
+    });
+
+    // Make panels draggable and resizable
+    $('#dashboard').selectable();
+
+    // Save layout
+    function saveLayout() {
+        let layout = [];
+        $('.panel').each(function() {
+            layout.push({
+                left: $(this).css('left'),
+                top: $(this).css('top'),
+                width: $(this).css('width'),
+                height: $(this).css('height')
+            });
+        });
+        localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+    }
+
+    // Load layout
+    function loadLayout() {
+        let layout = JSON.parse(localStorage.getItem('dashboardLayout')) || [];
+        layout.forEach(pos => {
+            createPanel().css({
+                left: pos.left,
+                top: pos.top,
+                width: pos.width,
+                height: pos.height
+            });
+        });
+    }
+
+    // Save layout when window is closing or before unload
+    $(window).on('beforeunload', saveLayout);
+
+    // Initial load
+    loadLayout();
+});
+</script>
+
+</body>
+</html>

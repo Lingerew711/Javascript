@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Dashboard</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap">
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        font-family: 'Roboto', sans-serif;
+    }
+    .dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+        padding: 10px;
+    }
+    .panel {
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .panel-header {
+        background: #f7f7f7;
+        padding: 10px;
+        cursor: move;
+    }
+    .panel-content {
+        padding: 10px;
+    }
+    .panel.resizable .ui-resizable-handle {
+        background: #aaa;
+        width: 10px;
+        height: 10px;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        cursor: se-resize;
+    }
+</style>
+</head>
+<body>
+<div class="dashboard" id="dashboard">
+    <div class="panel" id="panel-1">
+        <div class="panel-header">Drag me!</div>
+        <div class="panel-content">Content of Panel 1</div>
+    </div>
+    <!-- More panels can be added here -->
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script>
+$(function() {
+    // Make panels draggable
+    $(".panel").draggable({
+        handle: ".panel-header",
+        containment: "#dashboard",
+        snap: true
+    });
+
+    // Make panels resizable
+    $(".panel").resizable({
+        handles: 'se',
+        minWidth: 100,
+        minHeight: 100
+    });
+
+    // Save dashboard layout
+    function saveLayout() {
+        var layout = [];
+        $(".panel").each(function() {
+            var $this = $(this);
+            layout.push({
+                id: $this.attr('id'),
+                position: $this.position(),
+                size: { width: $this.width(), height: $this.height() }
+            });
+        });
+        localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+    }
+
+    // Load dashboard layout
+    function loadLayout() {
+        var storedLayout = localStorage.getItem('dashboardLayout');
+        if (storedLayout) {
+            var layout = JSON.parse(storedLayout);
+            $.each(layout, function(index, panel) {
+                var $panel = $('#' + panel.id);
+                $panel.css({
+                    top: panel.position.top,
+                    left: panel.position.left,
+                    width: panel.size.width,
+                    height: panel.size.height
+                });
+            });
+        }
+    }
+
+    // Save layout on change
+    $(".panel").on('dragstop resizestop', saveLayout);
+
+    // Load layout on page load
+    loadLayout();
+});
+</script>
+</body>
+</html>

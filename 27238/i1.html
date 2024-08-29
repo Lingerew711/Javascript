@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            width: 100%;
+            height: calc(100vh - 50px);
+            box-sizing: border-box;
+        }
+
+        .panel {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            position: relative;
+            resize: both;
+            overflow: auto;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+        }
+
+        .panel-content {
+            margin-top: 10px;
+        }
+
+        .remove-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #add-panel-btn {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+
+        .dragging {
+            opacity: 0.5;
+        }
+
+        .over {
+            border: 2px dashed #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Example Panel -->
+        <div class="panel" draggable="true">
+            <div class="panel-header">
+                <button class="remove-btn">×</button>
+                <span>Panel 1</span>
+            </div>
+            <div class="panel-content">
+                <p>Content goes here...</p>
+            </div>
+        </div>
+    </div>
+
+    <button id="add-panel-btn">Add Panel</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dashboard = document.querySelector('.dashboard');
+            const addPanelBtn = document.getElementById('add-panel-btn');
+
+            addPanelBtn.addEventListener('click', () => {
+                const newPanel = createPanel();
+                dashboard.appendChild(newPanel);
+            });
+
+            function createPanel() {
+                const panel = document.createElement('div');
+                panel.classList.add('panel');
+                panel.setAttribute('draggable', 'true');
+
+                const header = document.createElement('div');
+                header.classList.add('panel-header');
+
+                const closeBtn = document.createElement('button');
+                closeBtn.classList.add('remove-btn');
+                closeBtn.innerText = '×';
+
+                closeBtn.addEventListener('click', () => {
+                    panel.remove();
+                });
+
+                const title = document.createElement('span');
+                title.innerText = `Panel ${dashboard.childElementCount + 1}`;
+
+                header.appendChild(closeBtn);
+                header.appendChild(title);
+
+                const content = document.createElement('div');
+                content.classList.add('panel-content');
+                content.innerHTML = '<p>New content...</p>';
+
+                panel.appendChild(header);
+                panel.appendChild(content);
+
+                // Drag-and-Drop functionality
+                panel.addEventListener('dragstart', dragStart);
+                panel.addEventListener('dragend', dragEnd);
+
+                return panel;
+            }
+
+            let dragSourceElement = null;
+
+            function dragStart(e) {
+                dragSourceElement = this;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.outerHTML);
+                this.classList.add('dragging');
+            }
+
+            function dragEnd(e) {
+                this.classList.remove('dragging');
+                const panels = dashboard.querySelectorAll('.panel');
+                panels.forEach(panel => {
+                    panel.classList.remove('over');
+                });
+            }
+
+            dashboard.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            dashboard.addEventListener('dragenter', (e) => {
+                if (e.target.classList.contains('panel')) {
+                    e.target.classList.add('over');
+                }
+            });
+
+            dashboard.addEventListener('dragleave', (e) => {
+                if (e.target.classList.contains('panel')) {
+                    e.target.classList.remove('over');
+                }
+            });
+
+            dashboard.addEventListener('drop', (e) => {
+                e.stopPropagation();
+                if (e.target !== dragSourceElement && e.target.classList.contains('panel')) {
+                    dragSourceElement.outerHTML = e.target.outerHTML;
+                    e.target.outerHTML = e.dataTransfer.getData('text/html');
+                    addDragEventsToPanels();
+                }
+            });
+
+            function addDragEventsToPanels() {
+                const panels = dashboard.querySelectorAll('.panel');
+                panels.forEach(panel => {
+                    panel.addEventListener('dragstart', dragStart);
+                    panel.addEventListener('dragend', dragEnd);
+                });
+            }
+
+            addDragEventsToPanels();
+        });
+    </script>
+</body>
+</html>
