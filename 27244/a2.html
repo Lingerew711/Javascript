@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Random Cyclist Turn Direction</title>
+<style>
+  body {
+    background-color: #333;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    padding: 20px;
+  }
+  .label {
+    color: #03A9F4; /* Electricity blue */
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    transition: transform 0.5s, opacity 0.5s;
+  }
+  .button-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: calc(100% - 40px);
+  }
+  button {
+    background-color: #03A9F4; /* Electricity blue */
+    border: none;
+    padding: 15px;
+    height: 200px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  button:hover {
+    transform: scale(1.05);
+  }
+  button:active {
+    transform: scale(0.95);
+  }
+  .icon {
+    width: 32px;
+    height: 32px;
+  }
+  .icon svg {
+    fill: none;
+    stroke: black;
+    stroke-width: 2;
+  }
+</style>
+</head>
+<body>
+<div class="label" id="directionLabel"></div>
+<div class="button-grid">
+  <button onclick="randomizeDirection('left, straight, right')">
+    <span class="icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 5 L12 19 M5 12 L19 12" />
+      </svg>
+    </span>
+  </button>
+  <button onclick="randomizeDirection('left, straight')">
+    <span class="icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 5 L12 19 M5 12 L12 12" />
+      </svg>
+    </span>
+  </button>
+  <button onclick="randomizeDirection('right, straight')">
+    <span class="icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 5 L12 19 M12 12 L19 12" />
+      </svg>
+    </span>
+  </button>
+  <button onclick="randomizeDirection('left, right')">
+    <span class="icon">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 5 L12 12 M5 12 L19 12" />
+      </svg>
+    </span>
+  </button>
+</div>
+
+<script>
+  const directions = {
+    'left, straight, right': ['left', 'straight', 'right'],
+    'left, straight': ['left', 'straight'],
+    'right, straight': ['right', 'straight'],
+    'left, right': ['left', 'right'],
+  };
+
+  function randomizeDirection(options) {
+    const label = document.getElementById('directionLabel');
+    const possibleDirections = directions[options];
+    const randomIndex = Math.floor(Math.random() * possibleDirections.length);
+    const direction = possibleDirections[randomIndex];
+    
+    label.style.transform = 'scale(0.5)';
+    label.style.opacity = '0';
+    
+    setTimeout(() => {
+      label.textContent = `Go ${direction}!`;
+      label.style.transform = 'scale(1)';
+      label.style.opacity = '1';
+    }, 500);
+  }
+</script>
+</body>
+</html>
