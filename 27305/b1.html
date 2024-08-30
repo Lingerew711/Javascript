@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Todo List</title>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    .todo-container {
+        max-width: 500px;
+        margin: 30px auto;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .todo-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+    .todo-item.completed span {
+        text-decoration: line-through;
+    }
+    .delete-btn {
+        color: red;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<div class="container todo-container">
+    <h1 class="text-center">Todo List</h1>
+    <div class="input-group mb-3">
+        <input type="text" id="todoInput" class="form-control" placeholder="Enter new task..." aria-label="New task" aria-describedby="button-addon2">
+        <div class="input-group-append">
+            <button class="btn btn-outline-secondary" type="button" id="addTodo">Add</button>
+        </div>
+    </div>
+    <ul id="todoList" class="list-group"></ul>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    const todoInput = document.getElementById('todoInput');
+    const addTodoButton = document.getElementById('addTodo');
+    const todoList = document.getElementById('todoList');
+
+    // Add task
+    function addTask(text) {
+        const li = document.createElement('li');
+        li.className = 'list-group-item todo-item';
+        li.innerHTML = `<span>${text}</span><span class="delete-btn" onclick="deleteTask(this)">✖</span>`;
+        todoList.appendChild(li);
+        todoInput.value = ''; // Clear input
+
+        li.querySelector('span').addEventListener('click', function() {
+            this.parentElement.classList.toggle('completed');
+        });
+    }
+
+    // Delete task
+    function deleteTask(element) {
+        element.parentElement.remove();
+    }
+
+    // Event Listener for adding task via button or Enter key
+    addTodoButton.onclick = () => addTask(todoInput.value);
+    todoInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            addTask(todoInput.value);
+        }
+    });
+});
+</script>
+
+</body>
+</html>
