@@ -1,102 +1,101 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dynamic Dashboard</title>
-<link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gridster/0.5.6/jquery.gridster.min.css" />
 <style>
-    #dashboard {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 10px;
+    .gridster {
+        margin: 20px auto;
+    }
+    .gridster > li {
+        font-size: 1em;
+        text-align: center;
+        line-height: 100px;
+        background-color: #f7f7f7;
+        border: 1px solid #eee;
+    }
+    .panel-content {
         padding: 10px;
     }
-    .panel {
-        background: #f0f0f0;
-        border: 1px solid #ccc;
-        padding: 10px;
-        min-height: 100px;
-        position: relative;
-    }
-    .panel .ui-resizable-handle {
-        background: #ddd;
-        border: 1px solid #bbb;
-        width: 7px;
-        height: 7px;
-        position: absolute;
-    }
-    .ui-resizable-se {
-        right: -5px;
-        bottom: -5px;
-    }
-    #addPanelBtn {
-        margin: 10px;
+    .chart-container {
+        width: 100%;
+        height: 100%;
     }
 </style>
 </head>
 <body>
-
-<button id="addPanelBtn">Add Panel</button>
-<div id="dashboard"></div>
-
+<div class="gridster">
+    <ul id="dashboard-grid"></ul>
+</div>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gridster/0.5.6/jquery.gridster.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-$(function() {
-    // Function to create a new panel
-    function createPanel(type = 'text') {
-        let panel = $('<div class="panel ui-widget-content">' + 
-                      (type === 'text' ? 'Edit Me' : 'Chart Placeholder') + 
-                      '</div>');
-        panel.appendTo('#dashboard').resizable({
-            handles: 'se'
-        }).draggable({
-            handle: '.panel',
-            containment: '#dashboard'
-        });
-    }
+    $(function () {
+        var gridster;
+        gridster = $(".gridster > ul").gridster({
+            widget_margins: [10, 10],
+            widget_base_dimensions: [140, 140],
+            max_cols: 6,
+            min_cols: 6,
+            resize: {
+                enabled: true
+            },
+            draggable: {
+                handle: 'header'
+            }
+        }).data('gridster');
 
-    // Add panel button
-    $('#addPanelBtn').on('click', function() {
-        createPanel();
+        // Functions to add different panels
+        function addPanel(type) {
+            var panelHTML;
+            switch(type) {
+                case 'chart':
+                    panelHTML = '<li><header>Chart Panel</header><div class="panel-content"><canvas class="chart-container" id="chart-' + Math.random() + '"></canvas></div></li>';
+                    break;
+                case 'text':
+                    panelHTML = '<li><header>Text Panel</header><div class="panel-content">Edit me...</div></li>';
+                    break;
+                default:
+                    return;
+            }
+            var panel = $(panelHTML);
+            gridster.add_widget(panel, 1, 1);
+            if (type === 'chart') {
+                var ctx = panel.find('canvas')[0].getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ["Jan", "Feb", "Mar", "Apr", "May"],
+                        datasets: [{
+                            label: 'Sample Data',
+                            data: [10, 20, 15, 30, 40],
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Adding initial panels
+        addPanel('chart');
+        addPanel('text');
+
+        // Button to add more panels
+        $('<button>Add Chart</button>').click(function() { addPanel('chart'); }).appendTo('body');
+        $('<button>Add Text</button>').click(function() { addPanel('text'); }).appendTo('body');
     });
-
-    // Make panels draggable and resizable
-    $('#dashboard').selectable();
-
-    // Save layout
-    function saveLayout() {
-        let layout = [];
-        $('.panel').each(function() {
-            layout.push({
-                left: $(this).css('left'),
-                top: $(this).css('top'),
-                width: $(this).css('width'),
-                height: $(this).css('height')
-            });
-        });
-        localStorage.setItem('dashboardLayout', JSON.stringify(layout));
-    }
-
-    // Load layout
-    function loadLayout() {
-        let layout = JSON.parse(localStorage.getItem('dashboardLayout')) || [];
-        layout.forEach(pos => {
-            createPanel().css({
-                left: pos.left,
-                top: pos.top,
-                width: pos.width,
-                height: pos.height
-            });
-        });
-    }
-
-    // Save layout when window is closing or before unload
-    $(window).on('beforeunload', saveLayout);
-
-    // Initial load
-    loadLayout();
-});
 </script>
-
 </body>
 </html>

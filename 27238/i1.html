@@ -3,92 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dynamic Dashboard</title>
+    <title>Interactive Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/quill/dist/quill.snow.css" rel="stylesheet">
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
-
         .dashboard {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 10px;
+            overflow: auto;
             padding: 10px;
-            width: 100%;
-            height: calc(100vh - 50px);
-            box-sizing: border-box;
+            flex-grow: 1;
         }
-
         .panel {
             background-color: #f0f0f0;
             border: 1px solid #ccc;
             border-radius: 5px;
-            padding: 10px;
             position: relative;
+            overflow: hidden;
             resize: both;
             overflow: auto;
         }
-
         .panel-header {
+            padding: 5px;
+            background-color: #eee;
+            border-bottom: 1px solid #ddd;
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: move;
         }
-
         .panel-content {
-            margin-top: 10px;
+            padding: 10px;
         }
-
         .remove-btn {
-            background: none;
             border: none;
-            font-size: 16px;
+            background: none;
             cursor: pointer;
-        }
-
-        #add-panel-btn {
-            margin: 10px;
-            padding: 10px 20px;
             font-size: 16px;
         }
-
-        .dragging {
-            opacity: 0.5;
+        #add-panel-btn, #panel-type {
+            margin: 10px;
+            padding: 10px;
         }
-
-        .over {
-            border: 2px dashed #aaa;
+        .text-editor {
+            height: 100px;
         }
     </style>
 </head>
 <body>
-    <div class="dashboard">
-        <!-- Example Panel -->
-        <div class="panel" draggable="true">
-            <div class="panel-header">
-                <button class="remove-btn">×</button>
-                <span>Panel 1</span>
-            </div>
-            <div class="panel-content">
-                <p>Content goes here...</p>
-            </div>
-        </div>
-    </div>
-
+    <select id="panel-type">
+        <option value="text">Text Box</option>
+        <option value="bar">Bar Chart</option>
+        <option value="line">Line Chart</option>
+    </select>
     <button id="add-panel-btn">Add Panel</button>
+    <div class="dashboard"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/quill/dist/quill.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const dashboard = document.querySelector('.dashboard');
             const addPanelBtn = document.getElementById('add-panel-btn');
+            const panelTypeSelect = document.getElementById('panel-type');
 
             addPanelBtn.addEventListener('click', () => {
-                const newPanel = createPanel();
+                const type = panelTypeSelect.value;
+                const newPanel = createPanel(type);
                 dashboard.appendChild(newPanel);
+                if (type === 'text') {
+                    initializeQuill(newPanel.querySelector('.text-editor'));
+                }
             });
 
-            function createPanel() {
+            function createPanel(type) {
                 const panel = document.createElement('div');
                 panel.classList.add('panel');
                 panel.setAttribute('draggable', 'true');
@@ -99,83 +95,71 @@
                 const closeBtn = document.createElement('button');
                 closeBtn.classList.add('remove-btn');
                 closeBtn.innerText = '×';
-
-                closeBtn.addEventListener('click', () => {
-                    panel.remove();
-                });
+                closeBtn.addEventListener('click', () => panel.remove());
 
                 const title = document.createElement('span');
                 title.innerText = `Panel ${dashboard.childElementCount + 1}`;
 
-                header.appendChild(closeBtn);
-                header.appendChild(title);
-
                 const content = document.createElement('div');
                 content.classList.add('panel-content');
-                content.innerHTML = '<p>New content...</p>';
-
                 panel.appendChild(header);
+                header.appendChild(closeBtn);
+                header.appendChild(title);
                 panel.appendChild(content);
 
-                // Drag-and-Drop functionality
-                panel.addEventListener('dragstart', dragStart);
-                panel.addEventListener('dragend', dragEnd);
-
+                if (type === 'text') {
+                    const editorDiv = document.createElement('div');
+                    editorDiv.classList.add('text-editor');
+                    content.appendChild(editorDiv);
+                } else if (type === 'bar' || type === 'line') {
+                    const canvas = document.createElement('canvas');
+                    content.appendChild(canvas);
+                    initializeChart(canvas, type);
+                }
                 return panel;
             }
 
-            let dragSourceElement = null;
-
-            function dragStart(e) {
-                dragSourceElement = this;
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/html', this.outerHTML);
-                this.classList.add('dragging');
+            function initializeQuill(editorDiv) {
+                const quill = new Quill(editorDiv, { theme: 'snow' });
+                quill.setText('Here is some initial text!');
             }
 
-            function dragEnd(e) {
-                this.classList.remove('dragging');
-                const panels = dashboard.querySelectorAll('.panel');
-                panels.forEach(panel => {
-                    panel.classList.remove('over');
+            function initializeChart(canvas, type) {
+                new Chart(canvas, {
+                    type: type,
+                    data: {
+                        labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+                        datasets: [{
+                            label: '# of Votes',
+                            data: [12, 19, 3, 5, 2, 3],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.2)',
+                                'rgba(54, 162, 235, 0.2)',
+                                'rgba(255, 206, 86, 0.2)',
+                                'rgba(75, 192, 192, 0.2)',
+                                'rgba(153, 102, 255, 0.2)',
+                                'rgba(255, 159, 64, 0.2)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 159, 64, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
                 });
             }
-
-            dashboard.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-            });
-
-            dashboard.addEventListener('dragenter', (e) => {
-                if (e.target.classList.contains('panel')) {
-                    e.target.classList.add('over');
-                }
-            });
-
-            dashboard.addEventListener('dragleave', (e) => {
-                if (e.target.classList.contains('panel')) {
-                    e.target.classList.remove('over');
-                }
-            });
-
-            dashboard.addEventListener('drop', (e) => {
-                e.stopPropagation();
-                if (e.target !== dragSourceElement && e.target.classList.contains('panel')) {
-                    dragSourceElement.outerHTML = e.target.outerHTML;
-                    e.target.outerHTML = e.dataTransfer.getData('text/html');
-                    addDragEventsToPanels();
-                }
-            });
-
-            function addDragEventsToPanels() {
-                const panels = dashboard.querySelectorAll('.panel');
-                panels.forEach(panel => {
-                    panel.addEventListener('dragstart', dragStart);
-                    panel.addEventListener('dragend', dragEnd);
-                });
-            }
-
-            addDragEventsToPanels();
         });
     </script>
 </body>
