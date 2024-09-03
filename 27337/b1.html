@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brick Breaker Game</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Press+Start+2P&display=swap">
+<style>
+  body {
+    font-family: 'Press Start 2P', cursive;
+    text-align: center;
+    background-color: #f0f0f0;
+  }
+  #game-container {
+    position: relative;
+    width: 400px;
+    height: 500px;
+    border: 1px solid black;
+    margin: 20px auto;
+    overflow: hidden;
+  }
+  .brick {
+    position: absolute;
+    background-color: #0095DD;
+    color: white;
+    text-align: center;
+  }
+  #paddle {
+    position: absolute;
+    bottom: 10px;
+    background-color: #000;
+    height: 10px;
+  }
+  #ball {
+    position: absolute;
+    background-color: #FF0000;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  #score, #lives {
+    position: absolute;
+    top: 5px;
+    font-size: 12px;
+  }
+  #score {
+    left: 5px;
+  }
+  #lives {
+    right: 5px;
+  }
+  #game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+<div id="game-container">
+  <div id="score">Score: 0</div>
+  <div id="lives">Lives: 3</div>
+  <div id="game-over">Game Over! Click to restart.</div>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script>
+  $(document).ready(function() {
+    const gameContainer = $('#game-container');
+    const paddleWidth = 80;
+    const paddleHeight = 10;
+    const ballDiameter = 10;
+    const brickWidth = 50;
+    const brickHeight = 20;
+    let ballDirectionX = 2;
+    let ballDirectionY = 2;
+    let score = 0;
+    let lives = 3;
+    let gameOver = false;
+
+    const paddle = $('<div id="paddle">').width(paddleWidth).height(paddleHeight);
+    const ball = $('<div id="ball">').width(ballDiameter).height(ballDiameter);
+
+    function createBricks(rows, cols) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          let brick = $('<div class="brick">').width(brickWidth).height(brickHeight).css({
+            'top': r * (brickHeight + 2) + 30,
+            'left': c * (brickWidth + 2)
+          }).text(r * cols + c + 1);
+          gameContainer.append(brick);
+        }
+      }
+    }
+
+    function movePaddle(event) {
+      const currentX = paddle.position().left;
+      const maxLeft = gameContainer.width() - paddleWidth;
+      if (event.key === "ArrowLeft" && currentX > 0) {
+        paddle.css('left', currentX - 10);
+      } else if (event.key === "ArrowRight" && currentX < maxLeft) {
+        paddle.css('left', currentX + 10);
+      }
+      if (event.key === "ArrowUp") {
+        startGame();
+      }
+    }
+
+    function startGame() {
+      if (gameOver) return;
+      gameContainer.append(paddle).append(ball);
+      paddle.css('left', (gameContainer.width() - paddleWidth) / 2);
+      ball.css({'top': gameContainer.height() - paddleHeight - ballDiameter * 2, 'left': paddle.position().left + paddleWidth / 2});
+      moveBall();
+      $(document).on('keydown', movePaddle);
+    }
+
+    function moveBall() {
+      let ballPosX = ball.position().left;
+      let ballPosY = ball.position().top;
+      
+      if (ballPosX <= 0 || ballPosX + ballDiameter >= gameContainer.width()) {
+        ballDirectionX = -ballDirectionX;
+      }
+      if (ballPosY <= 0) {
+        ballDirectionY = -ballDirectionY;
+      }
+      if (ballPosY + ballDiameter >= gameContainer.height()) {
+        loseLife();
+      }
+
+      checkCollisionWithPaddle(ballPosX, ballPosY);
+      checkCollisionWithBricks(ballPosX, ballPosY);
+
+      ball.css({'left': ballPosX + ballDirectionX, 'top': ballPosY + ballDirectionY});
+
+      if (!gameOver) {
+        setTimeout(moveBall, 10);
+      }
+    }
+
+    function checkCollisionWithPaddle(ballPosX, ballPosY) {
+      const paddlePosX = paddle.position().left;
+      const paddlePosY = paddle.position().top;
+      
+      if (ballPosY + ballDiameter >= paddlePosY && ballPosY + ballDiameter <= paddlePosY + paddleHeight && ballPosX >= paddlePosX && ballPosX <= paddlePosX + paddleWidth) {
+        ballDirectionY = -ballDirectionY;
+      }
+    }
+
+    function checkCollisionWithBricks(ballPosX, ballPosY) {
+      $(".brick").each(function() {
+        const brick = $(this);
+        const brickPosX = brick.position().left;
+        const brickPosY = brick.position().top;
+
+        if (ballPosX + ballDiameter >= brickPosX && ballPosX <= brickPosX + brickWidth &&
+            ballPosY + ballDiameter >= brickPosY && ballPosY <= brickPosY + brickHeight) {
+          brick.remove();
+          ballDirectionY = -ballDirectionY;
+          updateScore();
+        }
+      });
+    }
+
+    function loseLife() {
+      lives--;
+      $('#lives').text(`Lives: ${lives}`);
+      if (lives === 0) {
+        gameOver = true;
+        $('#game-over').show();
+        $(document).off('keydown', movePaddle);
+      } else {
+        resetBallAndPaddle();
+      }
+    }
+
+    function resetBallAndPaddle() {
+      ballDirectionX = 2;
+      ballDirectionY = 2;
+      ball.css({'top': gameContainer.height() - paddleHeight - ballDiameter * 2, 'left': paddle.position().left + paddleWidth / 2});
+    }
+
+    function updateScore() {
+      score++;
+      $('#score').text(`Score: ${score}`);
+    }
+
+    $('#game-over').on('click', function() {
+      location.reload();
+    });
+
+    createBricks(5, 8);
+    startGame();
+  });
+</script>
+</body>
+</html>
