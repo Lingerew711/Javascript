@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Dictionary App</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #searchBox {
+            width: calc(100% - 20px);
+            padding: 10px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+        }
+        #results {
+            text-align: left;
+            padding: 15px;
+        }
+        .audio-icon {
+            cursor: pointer;
+            width: 20px;
+        }
+        .definition {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="searchBox" placeholder="Search for a word...">
+        <div id="results"></div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            let words = [];
+            $.getJSON('https://raw.githubusercontent.com/adambom/dictionary/master/dictionary.json', function(data) {
+                words = Object.keys(data);
+            });
+
+            $("#searchBox").keyup(function(e) {
+                const userInput = $(this).val().toLowerCase();
+                const suggestions = words.filter(word => word.startsWith(userInput));
+                if (e.which === 13) { // Enter key
+                    fetchWordData(userInput);
+                }
+                // Arrow key navigation can be implemented here
+            });
+
+            function fetchWordData(word) {
+                const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+                $.getJSON(apiUrl, function(data) {
+                    displayWordData(data);
+                }).fail(function() {
+                    $("#results").html("Failed to fetch word details.");
+                });
+            }
+
+            function displayWordData(data) {
+                const resultHtml = data.map(entry => {
+                    const pronunciation = entry.phonetics.find(phonetic => phonetic.text).text || 'Not available';
+                    const audioUrl = entry.phonetics.find(phonetic => phonetic.audio).audio;
+                    const meanings = entry.meanings.map(meaning => {
+                        const definitions = meaning.definitions.map(def => `<li>${def.definition}</li>`).join('');
+                        return `<div class="definition">${meaning.partOfSpeech}<ul>${definitions}</ul></div>`;
+                    }).join('');
+
+                    return `
+                        <h2>${entry.word}</h2>
+                        <p>Pronunciation: ${pronunciation} <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSxRUwBOdFrJ2hdMPtQK9qIBSXNx7nIUdIoA&s" class="audio-icon" onclick="playAudio('${audioUrl}')"></p>
+                        <h3>Meanings:</h3>${meanings}
+                    `;
+                }).join('');
+                $("#results").html(resultHtml);
+            }
+
+            window.playAudio = function(url) {
+                const audio = new Audio(url);
+                audio.play();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Dictionary App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            font: 16px Arial;  
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background-color: #ffffff;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            padding: 20px;
+            width: 100%;
+            max-width: 600px;
+            margin: auto;
+        }
+        h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .autocomplete {
+            position: relative;
+            display: flex;
+            width: 100%;
+        }
+        input[type="text"], input[type="submit"] {
+            height: 40px;
+        }
+        input[type="text"] {
+            width: calc(100% - 40px);
+            padding: 10px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            border-radius: 4px 0 0 4px;
+        }
+        input[type="submit"] {
+            padding: 0 10px;
+            background-color: DodgerBlue;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 0 4px 4px 0;
+            font-size: 20px;
+            width: 40px;
+        }
+        input[type="submit"]:hover {
+            background-color: #0078d7;
+        }
+        #wordDefinition {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .audio-icon {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            background-size: cover;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        .definition {
+            padding-bottom: 10px;
+            margin-left: 20px; /* Indent for definitions */
+        }
+        .word-title {
+            font-size: 24px; /* Larger font size for the word */
+            font-weight: bold;
+        }
+        .part-of-speech {
+            font-size: 18px; /* Smaller than the word but prominent */
+            font-weight: bold;
+            margin-top: 10px; /* Margin between pronunciations and this section */
+        }
+        ul {
+    list-style-type: disc; /* Default style for definitions */
+    padding-left: 40px;
+    margin-top: 10px;
+}
+
+li {
+        margin-bottom: 12px; /* Increased space between list items for better readability */
+    }
+
+li.example {
+    list-style-type: circle; /* Different style for examples */
+    margin-left: 30px; /* Additional padding for examples to indent them further */
+}
+        .synonyms, .antonyms {
+            font-style: italic;
+        }
+        .pronunciation {
+            margin-bottom: 10px; /* Separate pronunciation from part-of-speech definitions */
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>English Dictionary</h2>
+        <div class="autocomplete">
+            <input type="text" id="myInput" name="myWord" placeholder="Search for English Words...">
+            <input type="submit" value="&#xf002;" class="fa fa-search"> <!-- Fix for the search icon -->
+        </div>
+        <div id="wordDefinition"></div>
+    </div>
+
+    <script>
+document.addEventListener("DOMContentLoaded", function() {
+    let words = [];
+    fetch('https://raw.githubusercontent.com/adambom/dictionary/master/dictionary.json')
+        .then(response => response.json())
+        .then(data => {
+            words = Object.keys(data).map(key => key.toLowerCase());
+            document.getElementById('myInput').addEventListener('input', function(e) {
+                const userInput = this.value.toLowerCase();
+                if (!userInput) return;
+                showSuggestions(userInput);
+            });
+        });
+
+    document.getElementById('myInput').addEventListener('keydown', function(e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            fetchWordData(this.value.toLowerCase());
+        }
+    });
+
+    document.querySelector('input[type="submit"]').addEventListener('click', function() {
+        const word = document.getElementById('myInput').value.toLowerCase();
+        fetchWordData(word);
+    });
+
+    function showSuggestions(input) {
+        let suggestions = words.filter(word => word.startsWith(input));
+        let suggestionHTML = suggestions.map(word => `<div onclick="selectWord('${word}')">${word}</div>`).join('');
+        document.getElementById('wordDefinition').innerHTML = suggestionHTML;
+    }
+
+    window.selectWord = function(word) {
+        document.getElementById('myInput').value = word;
+        fetchWordData(word);
+        document.getElementById('wordDefinition').innerHTML = '';
+    }
+
+    function fetchWordData(word) {
+        const apiUrl = `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`;
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    displayWordData(data);
+                } else {
+                    document.getElementById('wordDefinition').innerHTML = 'No definition found.';
+                }
+            })
+            .catch(() => {
+                document.getElementById('wordDefinition').innerHTML = 'Failed to fetch word details.';
+            });
+    }
+
+    function displayWordData(data) {
+        const entry = data[0]; // Use the first entry for the word title and pronunciation
+        let pronunciations = entry.phonetics.filter(p => p.text).map(p => {
+            const audioButton = p.audio ? `<span class="audio-icon" style="background-image: url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSxRUwBOdFrJ2hdMPtQK9qIBSXNx7nIUdIoA&s');" onclick="new Audio('${p.audio}').play()"></span>` : '';
+            return `${p.text} ${audioButton}`;
+        }).join(', ');
+
+        const wordTitle = `<div class="word-title">${entry.word}</div>`;
+        const pronunciationDetail = `<div class="pronunciation">Pronunciation: ${pronunciations}</div>`;
+
+        let meanings = entry.meanings.map(meaning => {
+            const definitions = meaning.definitions.map(def => {
+                const example = def.example ? `<li class="example"><em>Example:</em> ${def.example}</li>` : '';
+                return `<li>${def.definition}${example}</li>`;
+            }).join('');
+
+            const synonyms = meaning.synonyms.length > 0 ? `<p><strong>Synonyms:</strong> ${meaning.synonyms.join(', ')}</p>` : '';
+            const antonyms = meaning.antonyms.length > 0 ? `<p><strong>Antonyms:</strong> ${meaning.antonyms.join(', ')}</p>` : '';
+
+            return `<div class="definition"><strong class="part-of-speech">${meaning.partOfSpeech}</strong><ul>${definitions}</ul>${synonyms}${antonyms}</div>`;
+        }).join('');
+
+        document.getElementById('wordDefinition').innerHTML = `${wordTitle}${pronunciationDetail}${meanings}`;
+    }
+});
+
+</script>
+
+</body>
+</html>

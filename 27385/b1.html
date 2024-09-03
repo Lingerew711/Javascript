@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Dictionary</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .search-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        #searchBox {
+            width: calc(100% - 20px);
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #results {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .word-entry {
+            background: #fff;
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .audio-icon {
+            cursor: pointer;
+            width: 20px;
+            vertical-align: middle;
+        }
+        .submit-btn {
+            background-color: #5cb85c;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            display: inline-block;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="search-container">
+        <input type="text" id="searchBox" placeholder="Enter a word...">
+        <button class="submit-btn" onclick="searchWord()">Search</button>
+        <div id="results"></div>
+    </div>
+</div>
+
+<script>
+    // Fetching dictionary for autocomplete
+    fetch('https://raw.githubusercontent.com/adambom/dictionary/master/dictionary.json')
+        .then(response => response.json())
+        .then(data => {
+            const words = Object.keys(data);
+            let currentFocus;
+
+            // Autocomplete function
+            document.getElementById('searchBox').addEventListener('input', function(e) {
+                let val = this.value;
+                closeAllLists();
+                if (!val) return false;
+                currentFocus = -1;
+                let list = document.createElement('div');
+                list.setAttribute('id', this.id + 'autocomplete-list');
+                list.setAttribute('class', 'autocomplete-items');
+                this.parentNode.appendChild(list);
+                
+                for (let i = 0; i < words.length; i++) {
+                    if (words[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
+                        let item = document.createElement('div');
+                        item.innerHTML = '<strong>' + words[i].substr(0, val.length) + '</strong>';
+                        item.innerHTML += words[i].substr(val.length);
+                        item.innerHTML += "<input type='hidden' value='" + words[i] + "'>";
+                        item.addEventListener('click', function(e) {
+                            document.getElementById('searchBox').value = this.getElementsByTagName('input')[0].value;
+                            closeAllLists();
+                        });
+                        list.appendChild(item);
+                    }
+                }
+            });
+
+            // Keyboard navigation for autocomplete
+            document.getElementById('searchBox').addEventListener('keydown', function(e) {
+                let x = document.getElementById(this.id + 'autocomplete-list');
+                if (x) x = x.getElementsByTagName('div');
+                if (e.keyCode == 40) { // down
+                    currentFocus++;
+                    addActive(x);
+                } else if (e.keyCode == 38) { //up
+                    currentFocus--;
+                    addActive(x);
+                } else if (e.keyCode == 13) { //enter
+                    e.preventDefault();
+                    if (currentFocus > -1) {
+                        if (x) x[currentFocus].click();
+                    }
+                }
+            });
+
+            function addActive(x) {
+                if (!x) return false;
+                removeActive(x);
+                if (currentFocus >= x.length) currentFocus = 0;
+                if (currentFocus < 0) currentFocus = (x.length - 1);
+                x[currentFocus].classList.add('autocomplete-active');
+            }
+
+            function removeActive(x) {
+                for (let i = 0; i < x.length; i++) {
+                    x[i].classList.remove('autocomplete-active');
+                }
+            }
+
+            function closeAllLists(elmnt) {
+                let x = document.getElementsByClassName('autocomplete-items');
+                for (let i = 0; i < x.length; i++) {
+                    if (elmnt != x[i] && elmnt != document.getElementById('searchBox')) {
+                        x[i].parentNode.removeChild(x[i]);
+                    }
+                }
+            }
+
+            document.addEventListener('click', function(e) {
+                closeAllLists(e.target);
+            });
+
+            // Search function
+            window.searchWord = function() {
+                const word = document.getElementById('searchBox').value;
+                fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+                    .then(response => response.json())
+                    .then(data => displayResults(data))
+                    .catch(error => {
+                        document.getElementById('results').innerHTML = `<div class="word-entry">Failed to fetch word: ${error}</div>`;
+                    });
+            };
+
+            function displayResults(data) {
+                let resultsHTML = '';
+                data.forEach(entry => {
+                    entry.meanings.forEach(meaning => {
+                        resultsHTML += `<div class="word-entry">
+                            <h2>${entry.word} <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSxRUwBOdFrJ2hdMPtQK9qIBSXNx7nIUdIoA&s" class="audio-icon" onclick="playAudio('${entry.phonetics[0]?.audio || ''}')"></h2>
+                            <p>${entry.phonetics[0]?.text || 'Phonetic not available'}</p>
+                            <ul>
+                                ${meaning.definitions.map(def => `<li><b>${def.definition}</b><br><i>Example:</i> ${def.example || 'No example'}</li>`).join('')}
+                            </ul>
+                            <p><b>Synonyms:</b> ${meaning.synonyms.join(', ') || 'None'}</p>
+                            <p><b>Antonyms:</b> ${meaning.antonyms.join(', ') || 'None'}</p>
+                        </div>`;
+                    });
+                });
+                document.getElementById('results').innerHTML = resultsHTML;
+            }
+
+            function playAudio(url) {
+                if(url) {
+                    new Audio(url).play();
+                }
+            }
+        });
+</script>
+
+</body>
+</html>
