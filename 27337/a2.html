@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>JavaScript Brick Breaker</title>
+    <style>
+        .container {
+            height: 400px;
+            width: 80%;
+            margin-left: 5%;
+            overflow: hidden;
+            border: 1px solid black;
+            margin-top: 20px;
+            position: relative;
+            background-color: darkgrey;
+        }
+
+        .score,
+        .lives {
+            font-size: 3em;
+        }
+
+        .brick {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 91px;
+            height: 40px;
+            padding: 1px;
+            color: white;
+            border: 1px solid white;
+            font-size: 1.8em;
+            text-align: center;
+            line-height: 40px;
+        }
+
+        .direction-line {
+            position: absolute;
+            height: 2px;
+            background-color: white;
+            transform-origin: 0% 50%;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div> Score : <span class="score"></span> Lives : <select id="lives-select">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+        </select> </div>
+    <div class="container"></div>
+    <script>
+        const container = document.querySelector('.container');
+        const livesSelect = document.getElementById('lives-select');
+        let conDim = container.getBoundingClientRect();
+        const directionLine = document.createElement('div');
+        directionLine.className = 'direction-line';
+        container.appendChild(directionLine);
+
+        const gameover = document.createElement('div');
+        gameover.textContent = "Start Game";
+        gameover.style.position = "absolute";
+        gameover.style.color = "white";
+        gameover.style.lineHeight = "60px";
+        gameover.style.height = "250px";
+        gameover.style.textAlign = "center";
+        gameover.style.fontSize = "3em";
+        gameover.style.textTransform = "uppercase";
+        gameover.style.backgroundColor = "red";
+        gameover.style.width = "100%";
+        gameover.addEventListener('click', startGame);
+        container.appendChild(gameover);
+
+        const ball = document.createElement('div');
+        ball.style.position = "absolute";
+        ball.style.width = "20px";
+        ball.style.height = "20px";
+        ball.style.backgroundImage = "url('https://img.freepik.com/free-vector/3d-tennis-ball-isolated_1308-121223.jpg')";
+        ball.style.backgroundSize = "20px 20px";
+        ball.style.borderRadius = "25px";
+        ball.style.top = "70%";
+        ball.style.left = "50%";
+        ball.style.display = "none";
+        container.appendChild(ball);
+
+        const paddle = document.createElement('div');
+        paddle.style.position = "absolute";
+        paddle.style.backgroundColor = "white";
+        paddle.style.height = "20px";
+        paddle.style.width = "100px";
+        paddle.style.borderRadius = "25px";
+        paddle.style.bottom = "30px";
+        paddle.style.left = "50%";
+        container.appendChild(paddle);
+
+        let player = {
+            gameover: true,
+            inPlay: false,
+            lives: parseInt(livesSelect.value, 10)
+        };
+
+        livesSelect.addEventListener('change', function() {
+            player.lives = parseInt(this.value, 10);
+        });
+
+        function startGame() {
+            if (player.gameover) {
+                player.gameover = false;
+                gameover.style.display = "none";
+                player.score = 0;
+                ball.style.display = "block";
+                setupBricks(80);
+                scoreUpdater();
+                container.addEventListener('dblclick', setBallDirection);
+                container.addEventListener('mousemove', showDirection);
+            }
+        }
+
+        function setBallDirection(event) {
+            if (!player.inPlay) {
+                const mouseX = event.clientX - conDim.left;
+                const paddleCenter = paddle.offsetLeft + (paddle.offsetWidth / 2);
+                const direction = mouseX - paddleCenter;
+                player.ballDir = [direction / 10, -5];
+                player.inPlay = true;
+                directionLine.style.display = "none";
+                window.requestAnimationFrame(update);
+            }
+        }
+
+        function showDirection(event) {
+            if (!player.inPlay) {
+                const mouseX = event.clientX - conDim.left;
+                const paddleCenter = paddle.offsetLeft + (paddle.offsetWidth / 2);
+                const direction = mouseX - paddleCenter;
+                directionLine.style.display = "block";
+                directionLine.style.transform = `rotate(${Math.atan2(direction, 100)}rad)`;
+                directionLine.style.left = `${paddleCenter}px`;
+                directionLine.style.top = `${paddle.offsetTop - 20}px`;
+                directionLine.style.width = `${Math.sqrt(direction * direction + 100 * 100)}px`;
+            }
+        }
+
+        function setupBricks(num) {
+            let row = {
+                x: ((conDim.width % 100) / 2),
+                y: 50,
+                count: 0
+            };
+            let skip = false;
+            for (let x = 0; x < num; x++) {
+                if (row.x > (conDim.width - 100)) {
+                    row.y += 50;
+                    if (row.y > (conDim.height / 2)) {
+                        skip = true;
+                    }
+                    row.x = ((conDim.width % 100) / 2);
+                }
+                if (!skip) {
+                    createBrick(row);
+                }
+                row.x += 100;
+                row.count++;
+            }
+        }
+
+        function createBrick(pos) {
+            const div = document.createElement('div');
+            div.className = 'brick';
+            div.style.backgroundColor = rColor();
+            div.textContent = pos.count + 1;
+            div.style.left = `${pos.x}px`;
+            div.style.top = `${pos.y}px`;
+            container.appendChild(div);
+        }
+
+        function isCollide(a, b) {
+            const aRect = a.getBoundingClientRect();
+            const bRect = b.getBoundingClientRect();
+            return !(aRect.right < bRect.left || aRect.left > bRect.right || aRect.bottom < bRect.top || aRect.top > bRect.bottom);
+        }
+
+        function rColor() {
+            return '#' + Math.random().toString(16).substr(-6);
+        }
+
+        function scoreUpdater() {
+            document.querySelector('.score').textContent = player.score;
+            document.querySelector('.lives').textContent = player.lives;
+        }
+
+        function update() {
+            if (!player.gameover) {
+                movePaddle();
+                if (player.inPlay) {
+                    moveBall();
+                }
+                player.ani = window.requestAnimationFrame(update);
+            }
+        }
+
+        function movePaddle() {
+            const paddleCenter = paddle.offsetLeft + (paddle.offsetWidth / 2);
+            const leftLimit = 0;
+            const rightLimit = conDim.width - paddle.offsetWidth;
+            document.addEventListener('keydown', function (e) {
+                if (e.key === "ArrowLeft" && paddleCenter > leftLimit + (paddle.offsetWidth / 2)) {
+                    paddle.style.left = `${paddle.offsetLeft - 5}px`;
+                }
+                if (e.key === "ArrowRight" && paddleCenter < rightLimit + (paddle.offsetWidth / 2)) {
+                    paddle.style.left = `${paddle.offsetLeft + 5}px`;
+                }
+            });
+        }
+
+        function moveBall() {
+            const ballPos = {
+                x: ball.offsetLeft,
+                y: ball.offsetTop
+            };
+            ballPos.x += player.ballDir[0];
+            ballPos.y += player.ballDir[1];
+            if (ballPos.y < 0 || ballPos.y + 20 > conDim.height) {
+                player.ballDir[1] *= -1;
+                if (ballPos.y + 20 > conDim.height) {
+                    player.lives--;
+                    if (player.lives <= 0) {
+                        endGame();
+                    } else {
+                        player.inPlay = false;
+                        directionLine.style.display = "block";
+                    }
+                }
+            }
+            if (ballPos.x < 0 || ballPos.x + 20 > conDim.width) {
+                player.ballDir[0] *= -1;
+            }
+            if (isCollide(ball, paddle)) {
+                player.ballDir[1] *= -1;
+            }
+            const bricks = document.querySelectorAll('.brick');
+            bricks.forEach(brick => {
+                if (isCollide(ball, brick)) {
+                    player.ballDir[1] *= -1;
+                    brick.remove();
+                    player.score++;
+                    scoreUpdater();
+                }
+            });
+            if (bricks.length === 0) {
+                setupBricks(80);
+            }
+            ball.style.top = `${ballPos.y}px`;
+            ball.style.left = `${ballPos.x}px`;
+        }
+
+        function endGame() {
+            gameover.style.display = "block";
+            gameover.innerHTML = `Game Over<br>Your score ${player.score}<br>Click to restart`;
+            player.gameover = true;
+            ball.style.display = "none";
+            const bricks = document.querySelectorAll('.brick');
+            bricks.forEach(brick => brick.remove());
+            window.cancelAnimationFrame(player.ani);
+        }
+    </script>
+</body>
+
+</html>
