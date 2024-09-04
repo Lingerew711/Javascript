@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Memory Card Game</title>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background: #f3f3f3;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    #game-board {
+        display: grid;
+        grid-template-columns: repeat(4, 100px);
+        gap: 10px;
+    }
+    .card {
+        width: 100px;
+        height: 100px;
+        background-color: #2c3e50;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2em;
+        color: transparent;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 0.6s;
+        transform-style: preserve-3d;
+    }
+    .card.flipped {
+        transform: rotateY(180deg);
+        background-color: #3498db;
+        color: white;
+    }
+    .card.match {
+        background-color: #2ecc71;
+    }
+    #controls {
+        position: absolute;
+        top: 10px;
+        text-align: center;
+    }
+    #timer, #moves {
+        margin: 10px 0;
+        font-size: 1.2em;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 1em;
+        cursor: pointer;
+    }
+    #timeSelect {
+        padding: 5px;
+    }
+    .popup {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 20px;
+        background: white;
+        border: 2px solid #333;
+        z-index: 10;
+    }
+</style>
+</head>
+<body>
+
+<div id="game-board"></div>
+<div id="controls">
+    <select id="timeSelect">
+        <option value="10">10 sec</option>
+        <option value="30">30 sec</option>
+        <option value="60">60 sec</option>
+        <option value="90" selected>90 sec</option>
+    </select>
+    <button id="startBtn">Start Game</button>
+    <div id="timer">Time: 90s</div>
+    <div id="moves">Moves: 0</div>
+</div>
+
+<div class="popup" id="gameResult">
+    <h2 id="resultText"></h2>
+    <button onclick="location.reload()">Restart</button>
+</div>
+
+<script>
+    const gameBoard = document.getElementById('game-board');
+    const startBtn = document.getElementById('startBtn');
+    const timerDisplay = document.getElementById('timer');
+    const movesDisplay = document.getElementById('moves');
+    const timeSelect = document.getElementById('timeSelect');
+    const resultPopup = document.getElementById('gameResult');
+    const resultText = document.getElementById('resultText');
+    
+    let cards = ['🍎', '🍐', '🍊', '🍋', '🍇', '🍉', '🍓', '🍒', '🍎', '🍐', '🍊', '🍋', '🍇', '🍉', '🍓', '🍒'];
+    let flippedCards = [];
+    let matchedCards = [];
+    let moves = 0;
+    let timeLeft = 90;
+    let timer;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function createCard(icon) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.icon = icon;
+        card.innerHTML = icon;
+        card.addEventListener('click', flipCard);
+        return card;
+    }
+
+    function startGame() {
+        cards = shuffle(cards);
+        gameBoard.innerHTML = '';
+        cards.forEach(icon => gameBoard.appendChild(createCard(icon)));
+        moves = 0;
+        movesDisplay.textContent = 'Moves: 0';
+        matchedCards = [];
+        timeLeft = parseInt(timeSelect.value);
+        timerDisplay.textContent = `Time: ${timeLeft}s`;
+        timer = setInterval(updateTimer, 1000);
+    }
+
+    function flipCard() {
+        if (this.classList.contains('flipped') || flippedCards.length === 2 || this.classList.contains('match')) return;
+        this.classList.add('flipped');
+        flippedCards.push(this);
+
+        if (flippedCards.length === 2) {
+            moves++;
+            movesDisplay.textContent = `Moves: ${moves}`;
+            checkMatch();
+        }
+    }
+
+    function checkMatch() {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.icon === card2.dataset.icon) {
+            card1.classList.add('match');
+            card2.classList.add('match');
+            matchedCards.push(card1, card2);
+            flippedCards = [];
+            if (matchedCards.length === cards.length) endGame(true);
+        } else {
+            setTimeout(() => {
+                flippedCards.forEach(card => card.classList.remove('flipped'));
+                flippedCards = [];
+            }, 1000);
+        }
+    }
+
+    function updateTimer() {
+        timeLeft--;
+        timerDisplay.textContent = `Time: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            endGame(false);
+        }
+    }
+
+    function endGame(won) {
+        clearInterval(timer);
+        resultText.textContent = won ? 'You Win!' : 'Game Over!';
+        resultPopup.style.display = 'block';
+    }
+
+    startBtn.addEventListener('click', startGame);
+</script>
+
+</body>
+</html>

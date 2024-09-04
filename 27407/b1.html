@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Card Game</title>
+<style>
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: #f0f0f0;
+    margin: 0;
+}
+
+.game-container {
+    text-align: center;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+#game-board {
+    display: grid;
+    grid-template-columns: repeat(4, 100px);
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.card {
+    width: 100px;
+    height: 100px;
+    background-color: #2c3e50;
+    color: transparent;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em;
+    cursor: pointer;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+    position: relative;
+}
+
+.card.flip {
+    transform: rotateY(180deg);
+    background-color: #3498db;
+    color: white;
+}
+
+.card .front, .card .back {
+    position: absolute;
+    backface-visibility: hidden;
+}
+
+.card .back {
+    transform: rotateY(180deg);
+}
+
+#controls button, #timer-select {
+    margin: 10px;
+    padding: 10px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+#moves, #timer {
+    margin: 10px 0;
+    font-size: 1.2em;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.popup {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>Memory Card Game</h1>
+    <div id="controls">
+        <button id="start">Start Game</button>
+        <select id="timer-select">
+            <option value="10">10s</option>
+            <option value="30">30s</option>
+            <option value="60" selected>60s</option>
+            <option value="90">90s</option>
+        </select>
+    </div>
+    <div id="moves">Moves: 0</div>
+    <div id="timer">Time: 0s</div>
+    <div id="game-board"></div>
+</div>
+
+<div class="overlay" style="display: none;">
+    <div class="popup">
+        <h2 id="game-result"></h2>
+        <button id="restart">Restart</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const board = document.getElementById('game-board');
+    const movesDisplay = document.getElementById('moves');
+    const timerDisplay = document.getElementById('timer');
+    const startButton = document.getElementById('start');
+    const timerSelect = document.getElementById('timer-select');
+    const overlay = document.querySelector('.overlay');
+    const gameResult = document.getElementById('game-result');
+    const restartButton = document.getElementById('restart');
+
+    let cards = ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇'];
+    let flippedCards = [];
+    let moves = 0;
+    let matches = 0;
+    let timer = 0;
+    let gameTimer = null;
+    let gameActive = false;
+
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    function createBoard() {
+        shuffle(cards);
+        board.innerHTML = '';
+        cards.forEach(icon => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            cardElement.dataset.icon = icon;
+            cardElement.innerHTML = `<div class="front">?</div><div class="back">${icon}</div>`;
+            cardElement.addEventListener('click', flipCard);
+            board.appendChild(cardElement);
+        });
+    }
+
+    function flipCard() {
+        if (!gameActive || this.classList.contains('flip') || flippedCards.length >= 2) return;
+        
+        this.classList.add('flip');
+        flippedCards.push(this);
+
+        if (flippedCards.length === 2) {
+            moves++;
+            movesDisplay.textContent = `Moves: ${moves}`;
+            checkMatch();
+        }
+    }
+
+    function checkMatch() {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.icon === card2.dataset.icon) {
+            matches++;
+            flippedCards = [];
+            if (matches === cards.length / 2) {
+                endGame(true);
+            }
+        } else {
+            setTimeout(() => {
+                flippedCards.forEach(card => card.classList.remove('flip'));
+                flippedCards = [];
+            }, 1000);
+        }
+    }
+
+    function startGame() {
+        moves = 0;
+        matches = 0;
+        gameActive = true;
+        flippedCards = [];
+        movesDisplay.textContent = `Moves: ${moves}`;
+        createBoard();
+        timer = parseInt(timerSelect.value);
+        timerDisplay.textContent = `Time: ${timer}s`;
+        gameTimer = setInterval(updateTimer, 1000);
+        overlay.style.display = 'none';
+    }
+
+    function updateTimer() {
+        timer--;
+        timerDisplay.textContent = `Time: ${timer}s`;
+        if (timer <= 0) {
+            endGame(false);
+        }
+    }
+
+    function endGame(win) {
+        clearInterval(gameTimer);
+        gameActive = false;
+        gameResult.textContent = win ? 'You Win!' : 'Game Over!';
+        overlay.style.display = 'flex';
+    }
+
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+
+    // Initialize game board on first load
+    createBoard();
+});
+</script>
+</body>
+</html>
