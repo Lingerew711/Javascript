@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hit the Rat</title>
+<style>
+    body {
+        background-color: green;
+        color: white;
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        flex-direction: column;
+    }
+    #gameArea {
+        width: 600px;
+        height: 400px;
+        position: relative;
+        background: url('https://www.pngkey.com/png/full/60-608187_hole-hole-in-ground-png.png.png') no-repeat;
+        background-size: 100px 50px;
+        background-position: center;
+    }
+    .hole {
+        position: absolute;
+        width: 100px;
+        height: 50px;
+        background: url('https://www.pngkey.com/png/full/60-608187_hole-hole-in-ground-png.png.png') no-repeat;
+        background-size: contain;
+    }
+    .rat {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        background: url('https://media.geeksforgeeks.org/wp-content/uploads/20210303135621/rat.png') no-repeat;
+        background-size: contain;
+        display: none;
+    }
+    #hammer {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        background: url('https://i.pinimg.com/originals/08/d4/c4/08d4c4232ad5c3b152835810d8339de9.png') no-repeat;
+        background-size: contain;
+        pointer-events: none;
+        z-index: 10;
+    }
+    @keyframes hit {
+        0% { transform: rotate(0deg); }
+        50% { transform: rotate(-30deg); }
+        100% { transform: rotate(0deg); }
+    }
+    .hit-animation {
+        animation: hit 0.3s ease-out;
+    }
+    #score {
+        margin-top: 20px;
+        font-size: 24px;
+    }
+    button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 18px;
+    }
+</style>
+</head>
+<body>
+<div id="gameArea"></div>
+<div id="score">Score: 0</div>
+<button id="startBtn">Start</button>
+<button id="stopBtn" style="display:none;">Stop</button>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    const gameArea = document.getElementById('gameArea');
+    const holes = Array.from({length: 6}, (_, i) => {
+        let hole = document.createElement('div');
+        hole.className = 'hole';
+        hole.style.top = `${Math.floor(Math.random() * 300)}px`;
+        hole.style.left = `${(i * 100)}px`;
+        gameArea.appendChild(hole);
+        return hole;
+    });
+
+    let score = 0;
+    let gameInterval;
+    let rats = [];
+
+    function showRat() {
+        if (!gameInterval) return;
+        const hole = holes[Math.floor(Math.random() * holes.length)];
+        let rat = document.createElement('div');
+        rat.className = 'rat';
+        rat.style.top = `${hole.offsetTop + 10}px`;
+        rat.style.left = `${hole.offsetLeft + 25}px`;
+        gameArea.appendChild(rat);
+        $(rat).fadeIn(100).delay(1000).fadeOut(100, function() {
+            $(this).remove();
+        });
+        rats.push(rat);
+    }
+
+    function startGame() {
+        $('#startBtn').hide();
+        $('#stopBtn').show();
+        gameInterval = setInterval(showRat, 1500);
+    }
+
+    function stopGame() {
+        clearInterval(gameInterval);
+        $('#stopBtn').hide();
+        $('#startBtn').show();
+        rats.forEach(rat => $(rat).stop(true).remove());
+        rats = [];
+    }
+
+    $('#gameArea').append('<div id="hammer"></div>');
+    $('#gameArea').mousemove(function(e) {
+        $('#hammer').css({left: e.pageX - 25, top: e.pageY - 25});
+    });
+
+    $('#gameArea').click(function() {
+        $('#hammer').addClass('hit-animation');
+        setTimeout(() => $('#hammer').removeClass('hit-animation'), 300);
+        // Check if a rat was hit
+        rats.forEach((rat, index) => {
+            if ($(rat).is(':visible')) {
+                const ratPos = $(rat).offset();
+                if (e.pageX > ratPos.left && e.pageX < ratPos.left + 50 && 
+                    e.pageY > ratPos.top && e.pageY < ratPos.top + 50) {
+                    $(rat).hide();
+                    score++;
+                    $('#score').text(`Score: ${score}`);
+                }
+            }
+        });
+    });
+
+    $('#startBtn').click(startGame);
+    $('#stopBtn').click(stopGame);
+</script>
+</body>
+</html>

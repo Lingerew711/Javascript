@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hit the Rat</title>
+<style>
+    body {
+        background-color: #8BC34A;
+        color: white;
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+    }
+    #gameArea {
+        position: relative;
+        width: 800px;
+        height: 600px;
+        background: #689F38;
+        border: 4px solid #558B2F;
+        cursor: url('https://i.pinimg.com/originals/08/d4/c4/08d4c4232ad5c3b152835810d8339de9.png') 20 20, auto;
+    }
+    .hole {
+        position: absolute;
+        width: 100px;
+        height: 50px;
+        background: url('https://www.pngkey.com/png/full/60-608187_hole-hole-in-ground-png.png.png') no-repeat center;
+        background-size: contain;
+    }
+    .rat {
+        position: absolute;
+        width: 80px;
+        height: 80px;
+        background: url('https://media.geeksforgeeks.org/wp-content/uploads/20210303135621/rat.png') no-repeat center;
+        background-size: contain;
+        transition: top 0.3s;
+        top: 100%;
+    }
+    .rat.up {
+        top: 0;
+    }
+    #score, #controls {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+    }
+    #controls {
+        top: 50px;
+    }
+    button {
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    .hammer-hit {
+        animation: hammer-hit 0.2s;
+    }
+    @keyframes hammer-hit {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(-30deg); }
+    }
+    .splash {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        background: red;
+        border-radius: 50%;
+        transform: scale(0);
+        animation: splash 0.3s forwards;
+    }
+    @keyframes splash {
+        to { transform: scale(2); opacity: 0; }
+    }
+</style>
+</head>
+<body>
+<div id="gameArea">
+    <div id="score">Score: 0</div>
+    <div id="controls">
+        <button id="startBtn">Start</button>
+        <button id="stopBtn" style="display:none;">Stop</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const gameArea = document.getElementById('gameArea');
+    const scoreDisplay = document.getElementById('score');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    let score = 0;
+    let gameInterval;
+    let isGameRunning = false;
+
+    function createHole(x, y) {
+        const hole = document.createElement('div');
+        hole.className = 'hole';
+        hole.style.left = `${x}px`;
+        hole.style.top = `${y}px`;
+        gameArea.appendChild(hole);
+        return hole;
+    }
+
+    const holes = [
+        createHole(100, 100), createHole(350, 100), createHole(600, 100),
+        createHole(100, 300), createHole(350, 300), createHole(600, 300),
+        createHole(100, 500), createHole(350, 500), createHole(600, 500)
+    ];
+
+    function showRat() {
+        if (!isGameRunning) return;
+        const hole = holes[Math.floor(Math.random() * holes.length)];
+        const rat = document.createElement('div');
+        rat.className = 'rat';
+        rat.style.left = `${hole.offsetLeft + 10}px`;
+        rat.style.top = `${hole.offsetTop}px`;
+        gameArea.appendChild(rat);
+        
+        setTimeout(() => {
+            rat.classList.add('up');
+            setTimeout(() => {
+                if (rat.parentElement) {
+                    rat.classList.remove('up');
+                    setTimeout(() => gameArea.removeChild(rat), 300);
+                }
+            }, 1000);
+        }, 10);
+    }
+
+    gameArea.addEventListener('click', (e) => {
+        if (isGameRunning) {
+            const hammer = document.createElement('div');
+            hammer.className = 'hammer-hit';
+            hammer.style.position = 'absolute';
+            hammer.style.left = `${e.clientX}px`;
+            hammer.style.top = `${e.clientY}px`;
+            gameArea.appendChild(hammer);
+
+            const hitRat = e.target.closest('.rat');
+            if (hitRat) {
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+                const splash = document.createElement('div');
+                splash.className = 'splash';
+                splash.style.left = `${hitRat.offsetLeft}px`;
+                splash.style.top = `${hitRat.offsetTop}px`;
+                gameArea.appendChild(splash);
+                setTimeout(() => gameArea.removeChild(splash), 300);
+                hitRat.classList.remove('up');
+                setTimeout(() => gameArea.removeChild(hitRat), 300);
+            }
+
+            setTimeout(() => gameArea.removeChild(hammer), 200);
+        }
+    });
+
+    startBtn.onclick = () => {
+        isGameRunning = true;
+        startBtn.style.display = 'none';
+        stopBtn.style.display = 'inline';
+        gameInterval = setInterval(showRat, 1500);
+    };
+
+    stopBtn.onclick = () => {
+        isGameRunning = false;
+        clearInterval(gameInterval);
+        startBtn.style.display = 'inline';
+        stopBtn.style.display = 'none';
+    };
+});
+</script>
+</body>
+</html>
