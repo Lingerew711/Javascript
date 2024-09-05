@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Project Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+body { font-family: 'Roboto', sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+.container { display: flex; justify-content: space-around; flex-wrap: wrap; }
+.column { background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); width: 30%; min-width: 250px; margin: 10px; padding: 15px; }
+.task { background: #e9ecef; margin: 10px 0; padding: 10px; border-radius: 5px; cursor: move; transition: transform 0.2s; }
+.task:hover { transform: scale(1.02); }
+.task p { margin: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+h2 { color: #333; }
+button { background-color: #007bff; border: none; color: white; padding: 10px 15px; cursor: pointer; border-radius: 4px; transition: background-color 0.3s; }
+button:hover { background-color: #0056b3; }
+input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; box-sizing: border-box; }
+.invalid { border: 2px solid red; }
+#popup { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 500px; background: white; padding: 20px; z-index: 1000; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
+.overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+@media (max-width: 768px) {
+    .container { flex-direction: column; }
+    .column { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="column" id="todo">
+        <h2>To Do</h2>
+    </div>
+    <div class="column" id="inProgress">
+        <h2>In Progress</h2>
+    </div>
+    <div class="column" id="done">
+        <h2>Done</h2>
+    </div>
+</div>
+
+<button onclick="openAddTask()">Add Task</button>
+
+<div id="popup" class="popup">
+    <h3 id="taskTitle">Task Details</h3>
+    <p id="taskDescription"></p>
+    <div id="comments"></div>
+    <textarea id="commentInput" placeholder="Add a comment..."></textarea>
+    <button onclick="addComment()">Add Comment</button>
+    <button onclick="closePopup()">Close</button>
+</div>
+
+<div class="overlay" onclick="closePopup()"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const columns = document.querySelectorAll('.column');
+    const popup = document.getElementById('popup');
+    const overlay = document.querySelector('.overlay');
+    let currentTask = null;
+
+    function openAddTask() {
+        const taskName = prompt("Enter task name:");
+        const taskDescription = prompt("Enter task description:");
+        if(taskName && taskDescription) {
+            addTask(taskName, taskDescription, 'todo');
+        } else if(taskName || taskDescription) {
+            alert("Please fill in both task name and description.");
+        }
+    }
+
+    function addTask(name, description, status) {
+        const task = document.createElement('div');
+        task.className = 'task';
+        task.draggable = true;
+        task.innerHTML = `<h4>$ {name}</h4><p title=" ${description}">\${description}</p><small>Created: <INLINE_MATH>{new Date().toLocaleString()}</small>`;
+        task.addEventListener('click', () => showTaskDetails(task, name, description));
+        task.addEventListener('dragstart', drag);
+        document.getElementById(status).appendChild(task);
+        saveToLocalStorage();
+    }
+
+    function showTaskDetails(taskElement, name, description) {
+        currentTask = taskElement;
+        document.getElementById('taskTitle').textContent = name;
+        document.getElementById('taskDescription').textContent = description;
+        document.getElementById('comments').innerHTML = ''; // Reset comments
+        const comments = JSON.parse(localStorage.getItem(`comments-</INLINE_MATH>{name}`)) || [];
+        comments.forEach(comment => {
+            const commentElement = document.createElement('p');
+            commentElement.textContent = `\${comment.text} - <INLINE_MATH>{new Date(comment.timestamp).toLocaleString()}`;
+            document.getElementById('comments').appendChild(commentElement);
+        });
+        popup.style.display = 'block';
+        overlay.style.display = 'block';
+    }
+
+    function closePopup() {
+        popup.style.display = 'none';
+        overlay.style.display = 'none';
+    }
+
+    function addComment() {
+        const commentInput = document.getElementById('commentInput');
+        if(commentInput.value) {
+            const comments = JSON.parse(localStorage.getItem(`comments-</INLINE_MATH>{currentTask.querySelector('h4').textContent}`)) || [];
+            comments.push({text: commentInput.value, timestamp: Date.now()});
+            localStorage.setItem(`comments-\${currentTask.querySelector('h4').textContent}`, JSON.stringify(comments));
+            commentInput.value = '';
+            showTaskDetails(currentTask, currentTask.querySelector('h4').textContent, currentTask.querySelector('p').textContent);
+        }
+    }
+
+    function drag(ev) {
+        ev.dataTransfer.setData("text", ev.target.id);
+    }
+
+    function allowDrop(ev) {
+        ev.preventDefault();
+    }
+
+    function drop(ev) {
+        ev.preventDefault();
+        const data = ev.dataTransfer.getData("text");
+        const task = document.getElementById(data);
+        if (ev.target.className === "column" && isValidMove(task, ev.target.id)) {
+            ev.target.appendChild(task);
+            saveToLocalStorage();
+        } else {
+            alert("Invalid move. Tasks must go through 'In Progress'.");
+        }
+    }
+
+    function isValidMove(task, newStatus) {
+        const currentStatus = task.parentElement.id;
+        if (currentStatus === 'todo' && newStatus === 'done') return false;
+        return true;
+    }
+
+    function saveToLocalStorage() {
+        const states = {};
+        columns.forEach(column => {
+            states[column.id] = Array.from(column.children).map(child => ({
+                name: child.querySelector('h4').textContent,
+                description: child.querySelector('p').textContent,
+                timestamp: child.querySelector('small').textContent
+            }));
+        });
+        localStorage.setItem('tasks', JSON.stringify(states));
+    }
+
+    function loadFromLocalStorage() {
+        const savedTasks = JSON.parse(localStorage.getItem('tasks')) || {};
+        for(let status in savedTasks) {
+            savedTasks[status].forEach(task => addTask(task.name, task.description, status));
+        }
+    }
+
+    columns.forEach(column => {
+        column.addEventListener('dragover', allowDrop);
+        column.addEventListener('drop', drop);
+    });
+
+    loadFromLocalStorage();
+});
+</script>
+
+</body>
+</html>

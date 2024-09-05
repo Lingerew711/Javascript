@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Management Tool</title>
+<style>
+    body, html {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Modern font */
+        margin: 0;
+        padding: 0;
+        background: #f4f4f4; /* Light grey background */
+    }
+    .container{
+        margin: auto;
+        width: 95%;
+    }
+    .column {
+    width: 30%;
+    padding: 10px;
+    background: #fff; /* White background for columns */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Subtle shadows for depth */
+    border-radius: 10px; /* Rounded corners for columns */
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px; /* Space at the bottom */
+    overflow-y: auto; /* Allows scrolling within the column */
+    height: auto; /* Ensures height is based on content */
+}
+.board {
+    display: flex;
+    justify-content: space-around;
+    padding: 20px 20px 0;
+    flex-wrap: nowrap; /* Ensures columns are always in a single line */
+    align-items: flex-start; /* Aligns columns at their tops rather than stretching to fit the tallest */
+}
+
+.column-title{
+    text-align: center;
+}
+
+    .task {
+        background-color: inherit; /* Inherits from column */
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: transform 0.2s ease; /* Smooth transform on hover */
+    }
+    .task:hover {
+        transform: translateY(-2px); /* Lift effect on hover */
+    }
+    .task-header {
+        display: flex;
+        align-items: center;
+    }
+    .task-timestamp {
+    font-size: 10px;
+    color: #666;
+    padding-top: 5px;
+}
+
+    .assignee-circle {
+        width: 25px;
+        height: 25px;
+        border-radius: 50%;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        background: #555; /* Dark background for better contrast */
+    }
+    .comment-button, .close-button {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-size: 20px; /* Default icon size */
+        transition: transform 0.2s ease;
+    }
+    .comment-button:hover, .close-button:hover {
+    background: transparent;
+        transform: scale(1.2); /* Enlarge icons slightly on hover */
+    }
+    .comment-button {
+    position: relative; /* Set relative positioning to anchor the comment counter */
+}
+
+.comment-counter {
+    position: absolute;
+    top: -1px; /* Adjust this value as needed to position it right above the icon */
+    right: -10px; /* Center it above the comment icon */
+    background: green;
+    color: white;
+    border-radius: 50%;
+    font-size: 12px;
+    padding: 2px 5px;
+    visibility: visible; /* Hide it by default */
+    transition: visibility 0.2s ease-in-out;
+}
+
+.comment-button:hover .comment-counter {
+    visibility: visible; /* Make it visible when comment button is hovered */
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 25px;
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 12px;
+    z-index: 1000;
+    width: 400px;
+    max-height: 70vh; /* Maximum height */
+    overflow-y: auto; /* Scrollable content */
+    visibility: visible;
+    transition: all 0.3s ease-in-out;
+}
+
+
+.popup-content {
+    margin-bottom: 20px; /* Add space between content and textarea */
+    color: #333; /* Darker text for better readability */
+    font-size: 14px; /* Appropriate font size for readability */
+    line-height: 1.6; /* Improved line height for better text flow */
+}
+
+.comments-list {
+    max-height: 150px; /* Limiting height for overflow */
+    overflow-y: auto; /* Allow scroll on overflow */
+    margin-bottom: 20px; /* Space before the textarea */
+    border-top: 1px solid #eee; /* Subtle separation from content above */
+    border-bottom: 1px solid #eee; /* Subtle separation from textarea */
+    padding: 10px; /* Padding around the comments */
+}
+
+textarea#commentText {
+    width: 100%; /* Full width of the popup */
+    padding: 10px; /* Padding inside the textarea */
+    border: 1px solid #ccc; /* Subtle border */
+    border-radius: 8px; /* Rounded corners */
+    box-sizing: border-box; /* Border and padding included in width */
+    margin-bottom: 10px; /* Space between textarea and buttons */
+}
+.column-description {
+    font-size: 14px; /* Smaller than the column title for hierarchy */
+    color: #666; /* Lighter text for subtlety */
+    text-align: center;
+    margin: 0 10px 20px; /* Spacing for clarity */
+}
+
+
+button {
+    padding: 10px 20px; /* Larger padding for a better click area */
+    border: none; /* No border */
+    border-radius: 5px; /* Rounded corners for the button */
+    background-color: #5c67f2; /* A nice blue */
+    color: white; /* White text */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Smooth transition for hover effect */
+}
+
+button:hover {
+    background-color: #4a54e1; /* Darker blue on hover for button */
+}
+
+button:focus {
+    outline: none; /* Remove the outline to keep the design clean */
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+    z-index: 999; /* Ensures it's below the popup but above other content */
+    display: none; /* Hidden by default */
+}
+
+    input, button {
+        padding: 10px;
+        border-radius: 5px;
+        border: none;
+        margin: 0 5px;
+        width: calc(33.33% - 10px); /* Ensures even spacing */
+    }
+    input {
+        border: 1px solid #ccc;
+        transition: border-color 0.2s ease-in-out;
+    }
+    input:focus {
+        border-color: #007BFF; /* Highlight focus with a blue border */
+    }
+    .input-error {
+    border: 2px solid red;
+}
+
+    button {
+        background: #007BFF;
+        color: white;
+        transition: background-color 0.2s ease;
+    }
+    button:hover {
+        background: #0056b3;
+    }
+    .form-container {
+    margin: 10px;;
+    display: flex; /* Enables flexbox */
+    gap: 10px; /* Adds space between children */
+    justify-content: center; /* Centers items horizontally */
+    align-items: center; /* Aligns items vertically */
+}
+/* Media query for small screens */
+@media (max-width: 600px) {
+    .form-container {
+        flex-direction: column; /* Stacks flex items vertically */
+    }
+}
+    .comment-time {
+        font-size: 10px; /* Smaller font for timestamps */
+        color: #666;
+    }
+    #todo { background-color: #ffcccb; }
+    #in-progress { background-color: #ffff99; }
+    #done { background-color: #90ee90; }
+    #todo .task { background-color: #ffb6b9; }
+    #in-progress .task { background-color: #fdfd96; }
+    #done .task { background-color: #8fbc8f; }
+</style>
+</head>
+<body>
+    <div class="container">
+
+        <h1>Simple Project Managment Tool</h1>
+   
+    <div class="form-container">
+        <input type="text" id="taskInput" placeholder="Add a new task">
+        <input type="text" id="assigneeInput" placeholder="Assign to">
+        <button onclick="addTask()">Add Task</button>
+    </div>
+    <div class="board">
+        <div id="todo" class="column" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2 class="column-title">To Do</h2>
+            <p class="column-description">Tasks that need to be started.</p>
+        </div>
+        <div id="in-progress" class="column" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2 class="column-title">In Progress</h2>
+            <p class="column-description">Tasks currently being worked on.</p>
+        </div>
+        <div id="done" class="column" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2 class="column-title">Done</h2>
+            <p class="column-description">Tasks that have been completed.</p>
+        </div>
+        
+    </div>
+    <div class="overlay" onclick="closePopup()" style="display: none;"></div>
+    <div class="popup" id="popup" style="display: none;">
+        <div id="popup-content" class="popup-content"></div>
+        <div id="commentsList" the class="comments-list"></div>
+        <textarea id="commentText" rows="3" cols="30" placeholder="Add a comment..."></textarea>
+        <button onclick="addComment(currentTaskId)">Add Comment</button>
+        <button onclick="closePopup()">Close</button>
+    </div>
+</div>
+<script>
+    let taskIdCounter = 0;
+let currentTaskId = null;
+let comments = {};
+let tasks = {};  // Initialize an empty object to store task details
+
+
+function allowDrop(ev) {
+    ev.preventDefault();
+}
+
+function drag(ev) {
+    ev.dataTransfer.setData("text", ev.target.id);
+}
+
+function drop(ev) {
+    ev.preventDefault();
+    var data = ev.dataTransfer.getData("text");
+    var sourceColumn = document.getElementById(data).parentNode.id;
+    var targetColumn = ev.target.closest('.column').id;
+
+    // Enforce task progression logic
+    if (sourceColumn === 'todo' && targetColumn === 'done') {
+        showAlert("Invalid task progression. Please move the task to 'In Progress' first.");
+    } else {
+        var target = ev.target.closest('.column');
+        target.appendChild(document.getElementById(data));
+        updateTaskColumn(data, target.id);
+        saveTasks();
+    }
+}
+
+function showAlert(message) {
+    // Display the overlay
+    document.querySelector('.overlay').style.display = 'block';
+
+    let alertPopup = document.createElement("div");
+    alertPopup.style.position = 'fixed';
+    alertPopup.style.top = '40%';
+    alertPopup.style.left = '50%';
+    alertPopup.style.transform = 'translate(-50%, -50%)';
+    alertPopup.style.background = 'white';
+    alertPopup.style.padding = '20px';
+    alertPopup.style.borderRadius = '8px';
+    alertPopup.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
+    alertPopup.style.zIndex = '1000'; // Ensure it's above the overlay
+    alertPopup.innerHTML = `
+        <p>${message}</p>
+        <button onclick="this.parentNode.remove(); document.querySelector('.overlay').style.display = 'none';">Ok</button>
+    `;
+
+    document.body.appendChild(alertPopup);
+}
+
+
+function updateTaskColumn(taskId, columnId) {
+    const task = document.getElementById(taskId);
+    task.className = 'task';
+    task.classList.add(columnId);
+}
+
+function validateInputs() {
+    let isValid = true;
+    const taskInput = document.getElementById("taskInput");
+    const assigneeInput = document.getElementById("assigneeInput");
+    taskInput.classList.remove("input-error");
+    assigneeInput.classList.remove("input-error");
+
+    if (taskInput.value.trim() === "") {
+        taskInput.classList.add("input-error");
+        isValid = false;
+    }
+    if (assigneeInput.value.trim() === "") {
+        assigneeInput.classList.add("input-error");
+        isValid = false;
+    }
+    return isValid;
+}
+
+function addTask() {
+    if (validateInputs()) {
+        const taskInput = document.getElementById("taskInput");
+        const assigneeInput = document.getElementById("assigneeInput");
+        
+        // Define columnId here if it's supposed to be static
+        const columnId = 'todo';  // Ensuring columnId is defined within the function
+        
+        // Create the task with the current input values
+        createTask(taskInput.value.trim(), assigneeInput.value.trim(), columnId);
+        
+        // Clear the input fields after task creation
+        taskInput.value = "";
+        assigneeInput.value = "";
+        
+        // Save the new task to local storage or handle any other state update
+        saveTasks();
+    }
+}
+
+
+
+
+function createTask(description, assignee, columnId) {
+    const column = document.getElementById(columnId);
+    const newTask = document.createElement("div");
+    const timestamp = new Date().toLocaleString(); // Current time as a readable string
+    const truncatedDescription = description.length > 15 ? description.substring(0, 15) + '...' : description;
+
+    newTask.className = "task";
+    newTask.classList.add(columnId);
+    newTask.id = "task" + taskIdCounter++;
+    newTask.draggable = true;
+    newTask.ondragstart = drag;
+    newTask.onclick = () => showPopup(newTask.id, description, assignee, timestamp);
+    newTask.innerHTML = `
+        <div class="task-header">
+            <div class="assignee-circle">${assignee.charAt(0).toUpperCase()}</div>
+            <span title="${description}">${truncatedDescription}</span>
+        </div>
+        <div class="task-timestamp">${timestamp}</div>
+        <div>
+            <button class="comment-button" onclick="event.stopPropagation(); showPopup('${newTask.id}', '${description}', '${assignee}', '${timestamp}')">
+                💬<span class="comment-counter" id="count-${newTask.id}">0</span>
+            </button>
+            <button class="close-button" onclick="event.stopPropagation(); removeTask('${newTask.id}', event)">×</button>
+        </div>
+    `;
+    column.appendChild(newTask);
+    comments[newTask.id] = [];
+    tasks[newTask.id] = { description, assignee, timestamp, comments: [] };
+}
+
+
+
+
+
+function validateComment() {
+    const commentText = document.getElementById("commentText");
+    commentText.classList.remove("input-error");
+    if (commentText.value.trim() === "") {
+        commentText.classList.add("input-error");
+        return false;
+    }
+    return true;
+}
+
+function addComment(taskId) {
+    if (validateComment()) {
+        let commentText = document.getElementById("commentText").value.trim();
+        const currentTime = new Date().toLocaleString();
+        const newComment = {text: commentText, time: currentTime};
+        comments[taskId].push(newComment);
+        document.getElementById("commentText").value = '';
+        updateCommentCount(taskId);
+        appendCommentToPopup(newComment);
+        saveTasks();
+    }
+}
+
+function appendCommentToPopup(comment) {
+    const commentsList = document.getElementById("commentsList");
+    const commentElement = document.createElement("div");
+    commentElement.className = "comment-section";
+    commentElement.innerHTML = `<p>${comment.text}</p><p class="comment-time">${comment.time}</p>`;
+    commentsList.appendChild(commentElement);
+}
+
+function updateCommentCount(taskId) {
+    const countElement = document.getElementById(`count-${taskId}`);
+    countElement.textContent = comments[taskId].length;
+}
+
+function removeTask(taskId, event) {
+    event.stopPropagation();
+    document.getElementById(taskId).remove();
+    delete comments[taskId];
+    saveTasks();
+}
+
+function saveTasks() {
+    const columns = document.querySelectorAll('.column');
+    const tasks = {};
+    columns.forEach(column => {
+        tasks[column.id] = [];
+        column.querySelectorAll('.task').forEach(task => {
+            let description = task.querySelector('span').textContent;
+            let assignee = task.querySelector('.assignee-circle').textContent;
+            let commentCount = comments[task.id].length;
+            tasks[column.id].push({ description, assignee, commentCount, columnId: column.id });
+        });
+    });
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    localStorage.setItem('comments', JSON.stringify(comments));
+}
+
+function loadTasks() {
+    const tasks = JSON.parse(localStorage.getItem('tasks'));
+    comments = JSON.parse(localStorage.getItem('comments')) || {};
+    if (tasks) {
+        for (const columnId in tasks) {
+            tasks[columnId].forEach(task => {
+                createTask(task.description, task.assignee, task.columnId);
+                if (task.commentCount) {
+                    document.getElementById(`count-${task.id}`).textContent = task.commentCount;
+                }
+            });
+        }
+    }
+}
+
+function showPopup(taskId, description, assignee, timestamp) {
+    currentTaskId = taskId;
+    const commentsList = document.getElementById("commentsList");
+    commentsList.innerHTML = ''; // Clear previous comments
+    document.getElementById("popup-content").innerText = `Task: ${description}\nAssigned to: ${assignee}\nAdded on: ${timestamp}`;
+    (comments[taskId] || []).forEach(comment => {
+        const commentElement = document.createElement("div");
+        commentElement.className = "comment-section";
+        commentElement.innerHTML = `<p>${comment.text}</p><p class="comment-time">${comment.time}</p>`;
+        commentsList.appendChild(commentElement);
+    });
+    document.getElementById("popup").style.display = 'block';
+    document.querySelector('.overlay').style.display = 'block';
+}
+
+
+function closePopup() {
+    document.getElementById("popup").style.display = 'none';
+    document.querySelector('.overlay').style.display = 'none'; // Hide the overlay
+}
+
+
+window.onload = loadTasks;
+
+</script>
+</body>
+</html>
