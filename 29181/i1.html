@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playlist Organizer with Deezer Pagination</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Arial', sans-serif;
+    }
+
+    body {
+        background-color: #eaeaea;
+        color: #333;
+        padding: 20px;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: auto;
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #ccc;
+    }
+
+    h1 {
+        color: #4A90E2;
+    }
+
+    input[type="text"] {
+        width: calc(100% - 20px);
+        padding: 10px;
+        margin-top: 10px;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+    }
+
+    button {
+        background-color: #4A90E2;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        margin-top: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+        background-color: #357ABD;
+    }
+
+    #song-list-container {
+        margin-top: 20px;
+    }
+
+    .song-item {
+        background-color: #fff;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        position: relative;
+        /* Position relative to place buttons absolutely within */
+        overflow: hidden;
+        /* Ensures that anything out of bounds will be hidden */
+    }
+
+    .song-item img {
+        width: 100px;
+        /* Increased size for better visibility */
+        height: 100px;
+        border-radius: 5px;
+        /* Rounded corners for the image */
+        object-fit: cover;
+    }
+
+    .song-item {
+        background-color: #fff;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        position: relative;
+        transition: box-shadow 0.3s ease;
+    }
+
+    .song-item:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        /* Enhanced shadow on hover */
+    }
+
+    .song-item img {
+        width: 100px;
+        height: 100px;
+        border-radius: 5px;
+        object-fit: cover;
+    }
+
+    .song-info {
+        margin-left: 20px;
+        flex-grow: 1;
+    }
+
+    .song-actions {
+        position: absolute;
+        right: 15px;
+        /* Position towards the right inside the card */
+        display: flex;
+        align-items: center;
+        visibility: hidden;
+        /* Hide by default */
+    }
+
+    .song-item:hover .song-actions {
+        visibility: visible;
+        /* Show on hover */
+    }
+
+    button.song-action-btn {
+        border: none;
+        background: none;
+        color: #333;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 16px;
+        /* Larger clickable area */
+        transition: color 0.2s ease;
+    }
+
+    button.song-action-btn:hover {
+        color: #4A90E2;
+        /* Highlight on hover */
+    }
+
+
+    button.song-action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .song-item.playing .song-actions {
+        visibility: visible;
+        /* Ensure icons are visible when a song is playing */
+    }
+
+
+    .playlist {
+        background-color: #fff;
+        margin-top: 20px;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .playlist h3 {
+        color: #4A90E2;
+    }
+
+    .overlay {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        display: none;
+    }
+
+    button.remove-from-playlist-btn {
+        border: none;
+        background: none;
+        color: #FF6347;
+        /* Tomato red for visibility and emphasis on removal */
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 16px;
+        /* Ensure icons are appropriately sized */
+    }
+
+    button.remove-from-playlist-btn:hover {
+        color: #FF4500;
+        /* Darker red on hover for better interaction feedback */
+    }
+
+
+    .overlay {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+        display: none;
+    }
+
+    #playlist-popup {
+        display: none;
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 300px;
+        /* Adjust width as needed */
+        z-index: 1000;
+    }
+
+    #playlist-popup h3 {
+        margin-bottom: 20px;
+        /* More space under the title */
+    }
+
+    .playlist-options {
+        margin-bottom: 20px;
+        /* Space before the action buttons */
+    }
+
+    .playlist-options label {
+        display: block;
+        /* Each label on its own line */
+        margin-bottom: 10px;
+        /* Space between each label */
+    }
+
+    .playlist-options input[type="checkbox"] {
+        margin-right: 10px;
+        /* Space between checkbox and label text */
+    }
+
+    .popup-actions {
+        display: flex;
+        justify-content: space-evenly;
+        /* Evenly space buttons across the popup width */
+    }
+
+    .popup-actions button {
+        padding: 10px 20px;
+        /* Larger buttons are easier to interact with */
+        margin: 0 5px;
+        /* Space between buttons */
+        background-color: #4A90E2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .popup-actions button:hover {
+        background-color: #357ABD;
+    }
+
+    .mpl {
+        margin: 10px 0px;
+    }
+
+    .search-container {
+        display: flex;
+        width: 100%;
+        max-width: 90%;
+        /* Adjust the width as necessary */
+        margin: 10px 0px;
+    }
+
+    #search-query {
+        flex-grow: 1;
+        padding: 10px;
+        border: 2px solid #ccc;
+        border-radius: 4px 0 0 4px;
+        /* Rounded corners on the left side only */
+        border-right: none;
+        /* Remove border between input and button */
+    }
+
+    .search-btn {
+        padding: 10px 12px;
+        background-color: #4A90E2;
+        /* A pleasing blue, can be adjusted */
+        color: white;
+        border: 2px solid #4A90E2;
+        border-radius: 0 4px 4px 0;
+        /* Rounded corners on the right side only */
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .search-btn:hover {
+        background-color: #357ABD;
+        /* A darker shade for hover effect */
+    }
+
+    .search-btn i {
+        vertical-align: middle;
+        /* Center the icon vertically */
+    }
+
+    .toast {
+        visibility: hidden;
+        /* Hidden by default */
+        min-width: 250px;
+        margin-left: -125px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1001;
+        left: 50%;
+        bottom: 30px;
+        font-size: 17px;
+    }
+
+    /* Show the toast */
+    .show-toast {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+
+    @-webkit-keyframes fadein {
+        from {
+            bottom: 0;
+            opacity: 0;
+        }
+
+        to {
+            bottom: 30px;
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadein {
+        from {
+            bottom: 0;
+            opacity: 0;
+        }
+
+        to {
+            bottom: 30px;
+            opacity: 1;
+        }
+    }
+
+    @-webkit-keyframes fadeout {
+        from {
+            bottom: 30px;
+            opacity: 1;
+        }
+
+        to {
+            bottom: 0;
+            opacity: 0;
+        }
+    }
+
+    @keyframes fadeout {
+        from {
+            bottom: 30px;
+            opacity: 1;
+        }
+
+        to {
+            bottom: 0;
+            opacity: 0;
+        }
+    }
+
+    #confirmation-popup {
+        position: fixed;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1002;
+        /* Ensure it's above other overlays */
+        width: 300px;
+    }
+
+    #confirmation-overlay {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1001;
+        /* Just below the confirmation popup */
+    }
+
+    #new-playlist-name {
+        padding: 10px;
+        margin-right: 5px;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+    }
+
+    #new-playlist-name:focus {
+        border-color: #4A90E2;
+    }
+
+    #create-playlist-container {
+        display: flex;
+        align-items: center;
+        /* Align vertically */
+        justify-content: start;
+        /* Align horizontally */
+
+    }
+
+    #new-playlist-name {
+        flex-grow: 1;
+        /* Allows input to take up available space */
+        padding: 10px;
+        margin-right: 10px;
+        /* Space between the input and the button */
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        outline: none;
+        /* Removes the outline to keep focus styles clean */
+    }
+
+    #new-playlist-name:focus {
+        border-color: #4A90E2;
+        /* Highlight input when focused */
+    }
+
+    #create-playlist-container button {
+        padding: 10px 20px;
+        background-color: #4A90E2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    #create-playlist-container button:hover {
+        background-color: #357ABD;
+        /* Darker shade on hover */
+    }
+
+
+    #create-playlist-container button {
+        padding: 10px 20px;
+        background-color: #4A90E2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    #new-playlist-name:focus+button {
+        background-color: #357ABD;
+    }
+</style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Playlist Organizer</h1>
+        </header>
+
+        <!-- Search Bar -->
+        <section id="search-bar">
+            <h2>Search Songs</h2>
+            <div class="search-container">
+                <input type="text" id="search-query" placeholder="Search by artist or song name">
+                <button class="search-btn"><i class="fas fa-search"></i></button>
+            </div>
+
+
+        </section>
+
+        <!-- Display Music List -->
+        <section id="music-list">
+            <h2>Music List</h2>
+
+
+            <div id="song-list-container"></div>
+            <div id="pagination-controls">
+                <button id="prev-btn">Previous</button>
+                <button id="next-btn">Next</button>
+            </div>
+        </section>
+
+        <!-- Display Playlists -->
+        <section id="playlists">
+            <h2 class="mpl">My Playlists</h2>
+            <div id="create-playlist-container" class="playlist-form">
+                <input type="text" id="new-playlist-name" placeholder="Enter new playlist name" />
+                <button onclick="createNewPlaylist()">Create</button>
+            </div>
+
+            <div id="playlist-container"></div>
+        </section>
+    </div>
+
+    <!-- Playlist Selection Popup -->
+    <div class="overlay" id="overlay"></div>
+    <div id="playlist-popup">
+        <h3>Select Playlists</h3>
+        <div id="playlist-options" class="playlist-options"></div>
+        <div class="popup-actions">
+            <button id="add-to-playlists-btn">Add</button>
+            <button id="close-popup-btn">Cancel</button>
+        </div>
+    </div>
+    <div id="toast" class="toast">Song added to playlist!</div>
+    <div class="overlay" id="confirmation-overlay" style="display: none;"></div>
+    <div id="confirmation-popup" style="display: none;">
+        <h3>Confirm Removal</h3>
+        <p>Are you sure you want to remove this song from the playlist?</p>
+        <button id="confirm-remove-btn">Remove</button>
+        <button onclick="closeConfirmationPopup()">Cancel</button>
+    </div>
+
+
+    <script>
+        const corsProxy = 'https://cors-anywhere.herokuapp.com/'; // Use CORS proxy
+        let nextPageUrl = null; // URL for the next page of results
+        let prevPageUrl = null; // URL for the previous page of results
+        const itemsPerPage = 10; // Number of items per page
+        let currentIndex = 0;     // Starting index for the tracks
+        const playlistContainer = document.getElementById('playlist-container');
+        let allSongs = [];
+        let playlists = { "Happy": [], "Sad": [], "Relaxed": [], "Energetic": [] }; // Predefined playlists
+        let selectedSong = null; // Store selected song for adding to multiple playlists
+        let currentPlayingAudio = null;
+        let currentPlayingButton = null;
+
+        // Initialize the predefined playlists
+        function initializePredefinedPlaylists() {
+            Object.keys(playlists).forEach(name => {
+                createPlaylist(name, false);
+            });
+        }
+
+        document.querySelector('.search-btn').addEventListener('click', () => {
+            const query = document.getElementById('search-query').value.trim();
+            if (query) {
+                searchSongs(query);
+            }
+        });
+
+        document.getElementById('search-query').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                const query = document.getElementById('search-query').value.trim();
+                if (query) {
+                    searchSongs(query);
+                }
+            }
+        });
+
+
+
+        // Function to search songs by artist name or song title
+        function searchSongs(query) {
+            fetch(`${corsProxy}https://api.deezer.com/search?q=${query}&limit=${itemsPerPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    allSongs = data.data;
+                    displaySongs(allSongs);
+
+                })
+                .catch(error => {
+                    console.error('Error fetching from Deezer:', error);
+                });
+        }
+
+        // Deezer API integration with CORS proxy - fetch paginated music list
+        function fetchMusic() {
+            fetch(`${corsProxy}https://api.deezer.com/chart/0/tracks?limit=${itemsPerPage}&index=${currentIndex}`)
+                .then(response => response.json())
+                .then(data => {
+                    allSongs = data.data;
+                    filteredSongs = allSongs; // Initially, all songs are shown without filtering
+                    displaySongs(filteredSongs);
+                })
+                .catch(error => {
+                    console.error('Error fetching from Deezer:', error);
+                });
+        }
+
+
+
+
+        document.getElementById('prev-btn').addEventListener('click', () => {
+            if (currentIndex > 0) {
+                currentIndex -= itemsPerPage; // Decrease index to show previous items
+                fetchMusic();
+            }
+        });
+
+        document.getElementById('next-btn').addEventListener('click', () => {
+            currentIndex += itemsPerPage; // Increase index to show next items
+            fetchMusic();
+        });
+
+
+        // Function to display songs with poster and play button
+        function displaySongs(songs) {
+            const songListContainer = document.getElementById('song-list-container');
+            songListContainer.innerHTML = ''; // Clear previous songs
+            songs.forEach(song => {
+                const songItem = document.createElement('div');
+                songItem.classList.add('song-item');
+                songItem.innerHTML = `
+        <img src="${song.album.cover_medium}" alt="Album cover">
+        <div class="song-info">
+            <strong>${song.title}</strong> by ${song.artist.name}
+        </div>
+    `;
+                const actionsContainer = document.createElement('div');
+                actionsContainer.classList.add('song-actions');
+                actionsContainer.appendChild(createPlayButton(song));
+                actionsContainer.appendChild(createAddToPlaylistButton(song));
+                songItem.appendChild(actionsContainer);
+                songListContainer.appendChild(songItem);
+            });
+
+
+            document.getElementById('add-to-playlists-btn').addEventListener('click', () => {
+                const selectedPlaylists = Array.from(document.querySelectorAll('#playlist-options input[type="checkbox"]:checked'))
+                    .map(input => input.value);
+
+                if (selectedPlaylists.length > 0 && selectedSong) {
+                    selectedPlaylists.forEach(playlistName => {
+                        addToPlaylist(selectedSong, playlistName);
+                    });
+
+                    // Show toast notification
+                    showToast('Song added to playlist!');
+
+                    // Close the popup after a delay
+
+                    closePopup();
+
+                } else {
+                    alert('Please select at least one playlist.');
+                }
+            });
+
+            function showToast(message) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.classList.add('show-toast');
+                setTimeout(() => {
+                    toast.classList.remove('show-toast');
+                }, 3000);
+            }
+
+
+            function closePopup() {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('playlist-popup').style.display = 'none';
+                
+            }
+
+        }
+
+        // Function to display the playlist selection popup
+        function showPlaylistPopup() {
+            const overlay = document.getElementById('overlay');
+            const popup = document.getElementById('playlist-popup');
+            const playlistOptions = document.getElementById('playlist-options');
+
+            playlistOptions.innerHTML = ''; // Clear previous options
+
+            // Display existing playlists with checkboxes
+            Object.keys(playlists).forEach(playlistName => {
+                const label = document.createElement('label');
+                const isAlreadyInPlaylist = playlists[playlistName].some(song => song.id === selectedSong.id);
+                const disabledAttr = isAlreadyInPlaylist ? 'disabled' : '';
+
+                label.innerHTML = `<input type="checkbox" value="${playlistName}" ${disabledAttr}> ${playlistName}`;
+                playlistOptions.appendChild(label);
+            });
+
+            // Open the popup
+            overlay.style.display = 'block';
+            popup.style.display = 'block';
+        }
+
+        // Close the playlist popup
+        document.getElementById('close-popup-btn').addEventListener('click', () => {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('playlist-popup').style.display = 'none';
+            selectedSong = null; // Clear selected song
+
+        });
+
+
+
+        function createNewPlaylist() {
+            const input = document.getElementById('new-playlist-name');
+            const playlistName = input.value.trim();
+
+            if (playlistName) {
+                if (playlists.hasOwnProperty(playlistName)) {
+                    showToast('Playlist already exists!');
+                    return;
+                }
+
+                playlists[playlistName] = [];
+                displayNewPlaylist(playlistName);
+                input.value = ''; // Clear the input field after adding
+                showToast('Playlist created successfully!');
+                input.focus(); // Focus back to the input for another entry
+            } else {
+                showToast('Please enter a name for the playlist.');
+            }
+        }
+
+
+        function displayNewPlaylist(name) {
+            const playlistContainer = document.getElementById('playlist-container');
+            const newPlaylist = document.createElement('div');
+            newPlaylist.classList.add('playlist');
+            newPlaylist.id = name + '-song-list'; // Unique ID for song list
+            newPlaylist.innerHTML = `<h3>${name}</h3><ul></ul>`;
+            playlistContainer.appendChild(newPlaylist);
+        }
+
+
+
+
+        // Function to Create Playlist (used for predefined playlists only)
+        function createPlaylist(name, addToOptions = false) {
+            if (playlists[name]) {
+                const playlist = document.createElement('div');
+                playlist.classList.add('playlist');
+                playlist.innerHTML = `
+              <h3>${name}</h3>
+              <ul class="playlist-song-list" id="${name}-song-list"></ul>
+            `;
+                playlistContainer.appendChild(playlist);
+            }
+        }
+
+        // Function to Add Song to Playlist
+        // Assuming createPlayButton and createAddToPlaylistButton are already defined
+
+        function addToPlaylist(song, playlistName) {
+            if (playlists[playlistName]) {
+        // Check if song is already in the playlist
+        if (!playlists[playlistName].some(s => s.id === song.id)) {
+          playlists[playlistName].push(song);
+            const playlist = document.getElementById(playlistName + '-song-list');
+            const songItem = document.createElement('div');
+            songItem.classList.add('song-item');
+            songItem.dataset.songId = song.id;  // Keep track of the song's ID for removal
+            songItem.innerHTML = `
+        <img src="${song.album.cover_medium}" alt="Album cover">
+        <div class="song-info">
+            <strong>${song.title}</strong> by ${song.artist.name}
+        </div>
+    `;
+            const actionsContainer = document.createElement('div');
+            actionsContainer.classList.add('song-actions');
+            actionsContainer.appendChild(createPlayButton(song));
+            actionsContainer.appendChild(createRemoveButton(song, playlistName));  // Add the remove button
+            songItem.appendChild(actionsContainer);
+            playlist.appendChild(songItem);
+        }
+    }}
+
+        function createPlayButton(song) {
+            const button = document.createElement('button');
+            button.classList.add('song-action-btn');
+            button.innerHTML = '<i class="fas fa-play"></i>';
+            button.onclick = () => {
+                // Play and pause logic here, similar to previous example
+            };
+            return button;
+        }
+
+
+        function createRemoveButton(song, playlistName) {
+            const button = document.createElement('button');
+            button.classList.add('remove-from-playlist-btn');
+            button.innerHTML = '<i class="fas fa-trash-alt"></i>';  // Font Awesome trash icon
+            button.onclick = () => {
+                showConfirmationPopup(song, playlistName);
+            };
+            return button;
+        }
+
+        function showConfirmationPopup(song, playlistName) {
+            const confirmBtn = document.getElementById('confirm-remove-btn');
+            confirmBtn.onclick = () => removeSongFromPlaylist(song, playlistName);
+            document.getElementById('confirmation-overlay').style.display = 'block';
+            document.getElementById('confirmation-popup').style.display = 'block';
+        }
+
+        function removeSongFromPlaylist(song, playlistName) {
+            // Remove song from the playlist array
+            playlists[playlistName] = playlists[playlistName].filter(s => s.id !== song.id);
+
+            // Also update the DOM to remove the song item
+            updatePlaylistDOM(song, playlistName);
+
+            // Close the confirmation popup
+            closeConfirmationPopup();
+
+            // Show a toast notification
+            showToast('Song removed from playlist!');
+        }
+
+        // Helper function to update the DOM after song removal
+        function updatePlaylistDOM(song, playlistName) {
+            const playlist = document.getElementById(`${playlistName}-song-list`);
+            const songItems = playlist.querySelectorAll('.song-item');
+            songItems.forEach(item => {
+                if (item.dataset.songId === song.id.toString()) {
+                    playlist.removeChild(item);
+                }
+            });
+        }
+
+        function closeConfirmationPopup() {
+            document.getElementById('confirmation-overlay').style.display = 'none';
+            document.getElementById('confirmation-popup').style.display = 'none';
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show-toast');
+            setTimeout(() => {
+                toast.classList.remove('show-toast');
+            }, 3000);
+        }
+
+        function removeFromPlaylist(song, playlistName) {
+            // Assuming `playlists` is a global object holding arrays of songs per playlist
+            playlists[playlistName] = playlists[playlistName].filter(s => s.id !== song.id);
+
+            // Remove the song element from the DOM
+            const playlist = document.getElementById(playlistName + '-song-list');
+            const songItems = playlist.querySelectorAll('.song-item');
+            songItems.forEach(item => {
+                if (item.dataset.songId === song.id.toString()) {
+                    playlist.removeChild(item);
+                }
+            });
+        }
+
+
+
+
+
+        function createPlayButton(song) {
+            const button = document.createElement('button');
+            button.classList.add('song-action-btn');
+            button.innerHTML = '<i class="fas fa-play"></i>'; // Font Awesome play icon
+            button.onclick = () => {
+                if (currentPlayingAudio && currentPlayingButton === button) {
+                    currentPlayingAudio.pause();
+                    currentPlayingAudio = null;
+                    button.innerHTML = '<i class="fas fa-play"></i>'; // Change to play icon
+                    button.closest('.song-item').classList.remove('playing');
+                    return;
+                }
+
+                // Stop any currently playing audio
+                if (currentPlayingAudio) {
+                    currentPlayingAudio.pause();
+                    currentPlayingButton.innerHTML = '<i class="fas fa-play"></i>'; // Change their icon to play
+                    currentPlayingButton.closest('.song-item').classList.remove('playing');
+                }
+
+                // Start new audio
+                const audio = new Audio(song.preview);
+                audio.play();
+                button.innerHTML = '<i class="fas fa-pause"></i>'; // Change icon to pause
+                button.closest('.song-item').classList.add('playing');
+                currentPlayingAudio = audio;
+                currentPlayingButton = button;
+
+                // Handle audio ending
+                audio.onended = () => {
+                    button.innerHTML = '<i class="fas fa-play"></i>';
+                    button.closest('.song-item').classList.remove('playing');
+                };
+            };
+            return button;
+        }
+
+
+        // Function to create an add to playlist button
+        function createAddToPlaylistButton(song) {
+            const button = document.createElement('button');
+            button.classList.add('song-action-btn');
+            button.innerHTML = '<i class="fas fa-plus-circle"></i>'; // Using Font Awesome add icon
+            button.dataset.songId = song.id;
+            button.addEventListener('click', () => {
+                selectedSong = allSongs.find(s => s.id == song.id);
+                if (selectedSong) {
+                    showPlaylistPopup();
+                }
+            });
+            return button;
+        }
+
+        // Inside displaySongs function
+
+        // Fetch initial music list on page load
+        fetchMusic(); // Initialize with a default URL for chart tracks
+
+        // Initialize predefined playlists
+        initializePredefinedPlaylists();
+    </script>
+</body>
+
+</html>

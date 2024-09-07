@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Playlist Organizer</title>
+<link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+<style>
+  body { font-family: 'Roboto', sans-serif; background: #f4f4f4; margin: 0; }
+  .container { padding: 20px; max-width: 1200px; margin: auto; }
+  .search-form { display: flex; margin-bottom: 20px; }
+  #searchInput { flex-grow: 1; padding: 10px; border-radius: 20px 0 0 20px; border: 1px solid #ddd; }
+  #searchBtn { padding: 10px 20px; background: #5cb85c; color: white; border: none; border-radius: 0 20px 20px 0; cursor: pointer; }
+  .song-list, .playlist { background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+  .song { padding: 10px; display: flex; align-items: center; border-bottom: 1px solid #eee; }
+  .song img { width: 50px; height: 50px; margin-right: 10px; }
+  .controls { margin-left: auto; }
+  .controls i { margin: 0 5px; cursor: pointer; }
+  .pagination { text-align: center; margin: 20px 0; }
+  .pagination button { margin: 0 5px; }
+  .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4); }
+  .modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px; }
+  .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <form class="search-form" id="searchForm">
+    <input type="text" id="searchInput" placeholder="Search for songs or artists...">
+    <button type="submit" id="searchBtn">Search</button>
+  </form>
+
+  <div id="results" class="song-list"></div>
+  <div class="pagination">
+    <button id="prevPage">Previous</button>
+    <button id="nextPage">Next</button>
+  </div>
+  <div id="playlists"></div>
+</div>
+
+<div id="playlistModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3>Add to Playlist</h3>
+    <div id="playlistOptions"></div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    const API_URL = 'https://api.deezer.com/search?q=';
+    let currentPage = 0;
+    const resultsPerPage = 10;
+    let searchResults = [];
+
+    // Function to search songs
+    function searchSongs(query) {
+        fetch(`${API_URL}${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                searchResults = data.data || [];
+                currentPage = 0;
+                displayResults();
+            });
+    }
+
+    // Display songs
+    function displayResults() {
+        const start = currentPage * resultsPerPage;
+        const end = start + resultsPerPage;
+        const songsToShow = searchResults.slice(start, end);
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = songsToShow.map(song => `
+            <div class="song">
+                <img src="${song.album.cover_small}" alt="Album Cover">
+                <div>${song.title} - ${song.artist.name}</div>
+                <div class="controls">
+                    <i class="fas fa-play" onclick="playSong('${song.preview}')"></i>
+                    <i class="fas fa-plus" onclick="showPlaylistModal('${song.id}')"></i>
+                </div>
+            </div>
+        `).join('');
+
+        // Update pagination buttons
+        document.getElementById('prevPage').disabled = currentPage === 0;
+        document.getElementById('nextPage').disabled = end >= searchResults.length;
+    }
+
+    // Playlist management
+    let playlists = {
+        'Happy': [], 'Sad': [], 'Relaxed': [], 'Energetic': []
+    };
+
+    function showPlaylistModal(songId) {
+        const modal = document.getElementById('playlistModal');
+        const optionsDiv = document.getElementById('playlistOptions');
+        optionsDiv.innerHTML = Object.keys(playlists).map(name => `
+            <label><input type="checkbox" value="${name}"> ${name}</label><br>
+        `).join('');
+        modal.style.display = 'block';
+
+        // Handle close
+        document.querySelector('.close').onclick = function() { modal.style.display = 'none'; };
+        // Handle adding to playlists
+        // (This part needs to be implemented with event listeners for adding)
+    }
+
+    // Event listeners
+    document.getElementById('searchForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        searchSongs(document.getElementById('searchInput').value);
+    });
+
+    document.getElementById('nextPage').addEventListener('click', function() {
+        if ((currentPage + 1) * resultsPerPage < searchResults.length) {
+            currentPage++;
+            displayResults();
+        }
+    });
+
+    document.getElementById('prevPage').addEventListener('click', function() {
+        if (currentPage > 0) {
+            currentPage--;
+            displayResults();
+        }
+    });
+});
+
+// Placeholder for play functionality
+function playSong(url) {
+    console.log('Playing song from:', url);
+}
+
+</script>
+
+</body>
+</html>
