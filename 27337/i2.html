@@ -17,7 +17,7 @@
 
         .score,
         .lives {
-            font-size: 3em;
+            font-size: 1em;
         }
 
         .brick {
@@ -44,7 +44,7 @@
 
         .controls {
             margin-bottom: 10px;
-            font-size: 1.5em;
+            font-size: 1em;
         }
 
         .dropdown {
@@ -56,7 +56,7 @@
 
 <body>
     <div class="controls">
-        Lives: 
+        Lives:
         <select class="dropdown" id="livesSelect">
             <option value="1">1</option>
             <option value="2">2</option>
@@ -71,12 +71,13 @@
         </select>
     </div>
     <div> Score : <span class="score"></span> Lives : <span class="lives"></span> </div>
+    <p class="inst"> Double lick to fire the ball.</p>
     <div class="container"></div>
     <script>
         const container = document.querySelector('.container');
         let conDim = container.getBoundingClientRect();
         const gameover = document.createElement('div');
-        gameover.textContent = "Start Game";
+        gameover.textContent = "Click To Start";
         gameover.style.position = "absolute";
         gameover.style.color = "white";
         gameover.style.lineHeight = "60px";
@@ -240,7 +241,7 @@
 
         function endGame() {
             gameover.style.display = "block";
-            gameover.innerHTML = "Game Over<br>Your score " + player.score;
+            gameover.innerHTML = "Game Over<br>Score:  " + player.score + "<br>Click To Restart";
             player.gameover = true;
             ball.style.display = "none";
             let tempBricks = document.querySelectorAll('.brick');
@@ -265,7 +266,9 @@
                 x: ball.offsetLeft,
                 y: ball.offsetTop
             };
-            if (posBall.y > (conDim.height - 20) || posBall.y < 0) {
+            if (posBall.y > (
+
+conDim.height - 20) || posBall.y < 0) {
                 if (posBall.y > (conDim.height - 20)) {
                     fallOff();
                 } else {

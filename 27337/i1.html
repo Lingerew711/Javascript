@@ -17,8 +17,9 @@
 }
 
 .score,
-.lives {
-    font-size: 3em;
+.lives,
+.inst{
+    font-size: 1em;
 }
 
 .brick {
@@ -39,13 +40,16 @@
     </head>
 
 <body>
-    <div> Score : <span class="score"></span> Lives : <span class="lives"></span> </div>
+    <div> Score : <span class="score"></span> Lives : <span class="lives">
+    <p class="inst"> Click up arrow to fire the ball.</p>
+    
+    </span> </div>
     <div class="container"></div>
     <script>
         const container = document.querySelector('.container');
         let conDim = container.getBoundingClientRect();
         const gameover = document.createElement('div');
-        gameover.textContent = "Start Game";
+        gameover.textContent = "Click To Start The Game";
         gameover.style.position = "absolute";
         gameover.style.color = "white";
         gameover.style.lineHeight = "60px";
@@ -196,7 +200,7 @@
 
         function endGame() {
             gameover.style.display = "block";
-            gameover.innerHTML = "Game Over<br>Your score " + player.score;
+            gameover.innerHTML = "Game Over<br> Score: " + player.score+"<br> Click To Restart";
             player.gameover = true;
             ball.style.display = "none";
             let tempBricks = document.querySelectorAll('.brick');

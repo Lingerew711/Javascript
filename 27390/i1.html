@@ -1,151 +1,118 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <title>Hit-The-Mouse</title>
-
-    <!-- Adding google fonts to our project
-		to set chosen font family -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-
     <style>
-        /* Restoring all the browser effects */
     * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Dancing Script', cursive;
-    cursor: none;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Dancing Script', cursive;
     }
-    
-    /* Setting up the bg-color, text-color 
-    and alignment to all body elements */
     body {
-    background-color: green;
-    color: white;
-    justify-content: center;
+        background-color: green;
+        color: white;
+        justify-content: center;
+        cursor: default; /* Use default cursor initially */
     }
-    
+    .hammer-active {
+        cursor: url('https://i.pinimg.com/originals/08/d4/c4/08d4c4232ad5c3b152835810d8339de9.png'), auto;
+    }
     .heading {
-    font-size: 2em;
-    margin: 1em 0;
-    text-align: center;
+        font-size: 2em;
+        margin: 1em 0;
+        text-align: center;
     }
-    
     .score {
-    font-size: 1.3em;
-    margin: 1em;
-    text-align: center;
+        font-size: 1.3em;
+        margin: 1em;
+        text-align: center;
     }
-    
     .holes {
-    width: 600px;
-    height: 400px;
-    display: flex;
-    flex-wrap: wrap;
-    margin: 0 auto;
+        width: 600px;
+        height: 400px;
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 auto;
     }
-    
     .hole {
-    flex: 1 0 33.33%;
-    overflow: hidden;
-    position: relative;
+        flex: 1 0 33.33%;
+        overflow: hidden;
+        position: relative;
     }
-    
-    /* Use of pseudo classes */
     .hole:after {
-    display: block;
-    background: url(
-    ' https://www.pngkey.com/png/full/60-608187_hole-hole-in-ground-png.png.png')
-        bottom center no-repeat;
-    background-size: contain;
-    content: '';
-    width: 100%;
-    height: 70px;
-    position: absolute;
-    z-index: 20;
-    bottom: -30px;
+        display: block;
+        background: url('https://www.pngkey.com/png/full/60-608187_hole-hole-in-ground-png.png') bottom center no-repeat;
+        background-size: contain;
+        content: '';
+        width: 100%;
+        height: 70px;
+        position: absolute;
+        bottom: -30px;
     }
-    
     .rat {
-    position: absolute;
-    z-index: 10;
-    height: 10vh;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    animation: move 0.5s linear;
-    }
-    
-    .buttons {
-    margin: 3em 0 0 0;
-    text-align: center;
-    }
-    
-    .button {
-    background-color: inherit;
-    padding: 15px 45px;
-    border: #fff 2px solid;
-    border-radius: 4px;
-    color: rgb(21, 14, 235);
-    font-size: 0.8em;
-    font-weight: 900;
-    outline: none;
-    }
-    
-    /* It is used because we want to 
-    display single button at a time
-    on the screen */
-    
-    /* This functionally is moreover 
-    controlled by JS */
-    .stop {
-    display: none;
-    }
-    
-    .hammer img {
-    position: absolute;
-    height: 125px;
-    z-index: 40;
-    transform: translate(-20px, -50px);
-    pointer-events: none;
-    animation: marne_wale_effects 0.1s ease;
-    }
-    
-    /* Giving animation to our rat */
-    @keyframes move {
-    from {
-        bottom: -60px;
-    }
-    to {
+        position: absolute;
+        z-index: 10;
+        height: 10vh;
         bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        animation: move 0.5s linear;
     }
+    .buttons {
+        margin: 3em 0 0 0;
+        text-align: center;
     }
-    
-    /* Giving effects to hammer when 
-    we hit on the rat */
-    @keyframes marne_wale_effects {
-    from {
-        transform: rotate(0deg);
+    .button {
+        background-color: inherit;
+        padding: 15px 45px;
+        border: #fff 2px solid;
+        border-radius: 4px;
+        color: rgb(21, 14, 235);
+        font-size: 0.8em;
+        font-weight: 900;
+        outline: none;
     }
-    to {
-        transform: rotate(-40deg);
+    .stop {
+        display: none;
     }
+    .hammer img {
+        position: absolute;
+        height: 125px;
+        z-index: 40;
+        transform: translate(-20px, -50px);
+        pointer-events: none;
     }
-
-    </style>
-</head>
+    @keyframes move {
+        from {
+            bottom: -60px;
+        }
+        to {
+            bottom: 0;
+        }
+    }
+    @keyframes hammer-hit {
+        0% {
+            transform: translate(-20px, -50px) rotate(0deg);
+        }
+        50% {
+            transform: translate(-20px, -100px) rotate(-45deg);
+        }
+        100% {
+            transform: translate(-20px, -50px) rotate(0deg);
+        }
+    }
+</style>
 
 <body>
     <div class="heading">
         <h1>Hit the Mouse</h1>
     </div>
-
     <div class="score">
         <h3>Points: <span>0</span></h3>
     </div>
-
     <div class="holes">
         <div class="hole hole1"></div>
         <div class="hole hole2"></div>
@@ -154,98 +121,73 @@
         <div class="hole hole5"></div>
     </div>
     <div class="buttons">
-        <button class="button start">
-            START
-        </button>
-
-        <button class="button stop">
-            STOP
-        </button>
+        <button class="button start">START</button>
+        <button class="button stop">STOP</button>
     </div>
-
     <div class="hammer">
         <img src='https://i.pinimg.com/originals/08/d4/c4/08d4c4232ad5c3b152835810d8339de9.png'>
     </div>
-
-    <!-- linking our js file -->
     <script>
+    const score = document.querySelector('.score span');
+    const holes = document.querySelectorAll('.hole');
+    const start_btn = document.querySelector('.buttons .start');
+    const stop_btn = document.querySelector('.buttons .stop');
+    const cursor = document.querySelector('.hammer img');
+    let game;
 
-        // Selection of all the CSS selectors 
-    const score = document.querySelector('.score span')
-    const holes = document.querySelectorAll('.hole')
-    const start_btn = document.querySelector('.buttons .start')
-    const stop_btn = document.querySelector('.buttons .stop')
-    const cursor = document.querySelector('.hammer img')
-    
-    // Here we changing our default cursor to hammer
-    // (e) refers to event handler
     window.addEventListener('mousemove', (e) => {
-    cursor.style.top = e.pageY + "px"
-    cursor.style.left = e.pageX + "px"
-    })
-    
-    // It is used to give the animation to
-    // our hammer every time we click it
-    // on our screen
+        // Adjust these values to position the cursor at the head of the hammer
+        const xOffset = -100; // Horizontal offset to align with the hammer head
+        const yOffset = 10; // Vertical offset to align with the hammer head
+        cursor.style.top = (e.pageY + yOffset) + "px";
+        cursor.style.left = (e.pageX + xOffset) + "px";
+    });
+
     window.addEventListener('click', () => {
-    cursor.style.animation = 'none'
-    setTimeout(() => {
-        cursor.style.animation = ''
-    }, 101)
-    })
-    
-    // From this part our game starts when
-    // we click on the start button
-    start_btn.addEventListener('click', () => {
-    start_btn.style.display = 'none'
-    stop_btn.style.display = 'inline-block'
-    
-    let holee
-    let points = 0
-    
-    const game = setInterval(() => {
-    
-        // Here we are taking a random hole
-        // from where mouse comes out
-        let ran = Math.floor(Math.random() * 5)
-        holee = holes[ran]
-    
-        // This part is used for taking the 
-        // mouse up to the desired hole
-        let set_img = document.createElement('img')
-        set_img.setAttribute('src', 
-    'https://media.geeksforgeeks.org/wp-content/uploads/20210303135621/rat.png')
-        set_img.setAttribute('class', 'rat')
-        holee.appendChild(set_img)
-    
-        // This part is used for taking
-        // the mouse back to the hole
+        cursor.style.animation = 'none'; // Reset the animation
         setTimeout(() => {
-            holee.removeChild(set_img)
-        }, 700);
-    }, 800)
-    
-    // It is used for adding our points
-    // to 0 when we hit to the mouse
-    window.addEventListener('click', (e) => {
-        if (e.target === holee) 
-            score.innerText = ++points;
-    })
-    
-    // This is coded for changing the score
-    // to 0 and change the stop button
-    // again to the start button!
+            cursor.style.animation = 'hammer-hit 0.3s ease'; // Apply the new animation
+        }, 10); // A brief timeout ensures the animation resets properly
+    });
+
+    start_btn.addEventListener('click', () => {
+        document.body.classList.add('hammer-active');
+        start_btn.style.display = 'none';
+        stop_btn.style.display = 'inline-block';
+        let points = 0;
+
+        game = setInterval(() => {
+            let ran = Math.floor(Math.random() * 5);
+            let holee = holes[ran];
+            let set_img = document.createElement('img');
+            set_img.setAttribute('src', 'https://media.geeksforgeeks.org/wp-content/uploads/20210303135621/rat.png');
+            set_img.setAttribute('class', 'rat');
+            holee.appendChild(set_img);
+
+            // Ensure each rat can only be clicked once for scoring
+            set_img.addEventListener('click', (e) => {
+                e.stopPropagation(); // Stop the click from affecting other elements
+                points++; // Increment the score
+                score.textContent = points; // Update the score display
+                holee.removeChild(set_img); // Remove the rat immediately after click
+            });
+
+            setTimeout(() => {
+                if (holee.contains(set_img)) {
+                    holee.removeChild(set_img);
+                }
+            }, 700);
+        }, 800);
+    });
+
     stop_btn.addEventListener('click', () => {
-        clearInterval(game)
-        stop_btn.style.display = 'none'
-        start_btn.style.display = 'inline-block'
-        score.innerHTML = '0'
-    })
-    })
+        document.body.classList.remove('hammer-active');
+        clearInterval(game);
+        stop_btn.style.display = 'none';
+        start_btn.style.display = 'inline-block';
+        score.textContent = '0'; // Reset the score display
+    });
+</script>
 
-    </script>
 </body>
-
 </html>
-
-
