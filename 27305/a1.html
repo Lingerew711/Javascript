@@ -3,86 +3,161 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>To-Do List Application</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+<title>Responsive To-Do Application</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 <style>
-    body {
-        font-family: 'Roboto', sans-serif;
-    }
-    .task-container {
-        max-width: 300px;
-        margin: 40px auto;
-        padding: 20px;
-        background: #f9f9f9;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .task-list {
-        list-style: none;
-        padding: 0;
-    }
-    .task-list li {
-        padding: 10px;
-        border-bottom: 1px solid #ccc;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .task-list li:last-child {
-        border-bottom: none;
-    }
-    .completed {
-        text-decoration: line-through;
-        color: #888;
-    }
-    .delete-button {
-        color: red;
-        cursor: pointer;
-    }
-    .add-task-button {
-        width: 100%;
-        margin-top: 10px;
+    body { font-family: 'Arial', sans-serif; }
+    .task-item { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    .task-item.completed { text-decoration: line-through; opacity: 0.6; }
+    .urgent { background-color: #ffebee; }
+    .work { background-color: #e8f5e9; }
+    .personal { background-color: #e1f5fe; }
+    .countdown { font-size: 0.8em; color: #666; }
+    @media (max-width: 768px) {
+        .btn { width: 100%; margin-top: 5px; }
     }
 </style>
 </head>
 <body>
-<div class="task-container">
-    <input type="text" id="taskInput" placeholder="Enter new task">
-    <button class="add-task-button" onclick="addTask()">Add Task</button>
-    <ul id="taskList" class="task-list"></ul>
+<div class="container mt-4">
+    <h1 class="text-center">To-Do List</h1>
+    <!-- Task Form -->
+    <form id="taskForm" class="mb-3">
+        <input type="text" id="title" class="form-control mb-2" placeholder="Task Title" required>
+        <textarea id="description" class="form-control mb-2" placeholder="Description"></textarea>
+        <select id="category" class="form-control mb-2">
+            <option value="General">General</option>
+            <option value="Work">Work</option>
+            <option value="Urgent">Urgent</option>
+            <option value="Personal">Personal</option>
+        </select>
+        <input type="date" id="dueDate" class="form-control mb-2" required>
+        <button type="submit" class="btn btn-primary">Add Task</button>
+    </form>
+
+    <!-- Filters -->
+    <div class="mb-3">
+        <select id="filterCategory" class="form-select">
+            <option value="all">All Categories</option>
+            <option value="General">General</option>
+            <option value="Work">Work</option>
+            <option value="Urgent">Urgent</option>
+            <option value="Personal">Personal</option>
+        </select>
+        <select id="filterStatus" class="form-select">
+            <option value="all">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+            <option value="Expired">Expired</option>
+        </select>
+    </div>
+
+    <!-- Task List -->
+    <div id="taskList"></div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- Modal content will be dynamically filled -->
+            </div>
+        </div>
+    </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
 <script>
-    document.getElementById('taskInput').addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            addTask();
-        }
+document.addEventListener('DOMContentLoaded', (event) => {
+    let tasks = [];
+    
+    const updateTaskList = () => {
+        $('#taskList').html(tasks.map((task, index) => {
+            const now = moment();
+            const due = moment(task.dueDate);
+            const diff = due.diff(now);
+            const duration = moment.duration(diff);
+            const countdown = diff > 0 ? `${duration.humanize()} left` : 'Expired';
+            const statusClass = task.completed ? 'completed' : (diff < 0 ? 'expired' : '');
+            const categoryClass = task.category.toLowerCase();
+            return `
+                <div class="task-item ${statusClass} ${categoryClass}" data-index="${index}">
+                    <h5>${task.title}</h5>
+                    <p>${task.description}</p>
+                    <p><strong>Due:</strong> ${due.format('YYYY-MM-DD')} <span class="countdown">${countdown}</span></p>
+                    <button class="btn btn-warning btn-sm edit-btn">Edit</button>
+                    <button class="btn btn-danger btn-sm delete-btn">Delete</button>
+                    <input type="checkbox" ${task.completed ? 'checked' : ''} class="complete-btn"> Complete
+                </div>
+            `;
+        }).join(''));
+
+        // Update countdowns
+        setInterval(() => {
+            $('.countdown').each(function() {
+                const dueDate = moment(tasks[$(this).closest('.task-item').data('index')].dueDate);
+                const diff = dueDate.diff(moment());
+                if (diff > 0) {
+                    $(this).text(`${moment.duration(diff).humanize()} left`);
+                } else {
+                    $(this).text('Expired');
+                }
+            });
+        }, 1000);
+    };
+
+    const filterTasks = () => {
+        const category = $('#filterCategory').val();
+        const status = $('#filterStatus').val();
+        const filteredTasks = tasks.filter(task => {
+            const categoryMatch = category === 'all' || task.category === category;
+            const statusMatch = status === 'all' || 
+                (status === 'Completed' && task.completed) || 
+                (status === 'Pending' && !task.completed && moment(task.dueDate).diff(moment()) >= 0) ||
+                (status === 'Expired' && moment(task.dueDate).diff(moment()) < 0);
+            return categoryMatch && statusMatch;
+        });
+        $('#taskList').html(filteredTasks.map((task, index) => {
+            // Similar to updateTaskList but using filteredTasks
+        }).join(''));
+    };
+
+    $('#taskForm').submit(e => {
+        e.preventDefault();
+        const newTask = {
+            title: $('#title').val(),
+            description: $('#description').val(),
+            category: $('#category').val(),
+            dueDate: $('#dueDate').val(),
+            completed: false
+        };
+        tasks.push(newTask);
+        updateTaskList();
+        e.target.reset();
     });
 
-    function addTask() {
-        const taskInput = document.getElementById('taskInput');
-        const taskText = taskInput.value.trim();
-        if (taskText) {
-            const taskList = document.getElementById('taskList');
-            const taskHTML = `
-                <li>
-                    <input type="checkbox" onclick="toggleCompleted(this)">
-                    <span>${taskText}</span>
-                    <span class="delete-button" onclick="deleteTask(this)">X</span>
-                </li>
-            `;
-            taskList.innerHTML += taskHTML;
-            taskInput.value = ''; // Clear input field
-        }
-    }
+    $('#taskList').on('click', '.delete-btn', function() {
+        const index = $(this).closest('.task-item').data('index');
+        tasks.splice(index, 1);
+        updateTaskList();
+    });
 
-    function toggleCompleted(checkbox) {
-        checkbox.parentNode.classList.toggle('completed');
-    }
+    $('#taskList').on('change', '.complete-btn', function() {
+        const index = $(this).closest('.task-item').data('index');
+        tasks[index].completed = $(this).is(':checked');
+        updateTaskList();
+    });
 
-    function deleteTask(deleteButton) {
-        const listItem = deleteButton.parentNode;
-        listItem.parentNode.removeChild(listItem);
-    }
+    $('#taskList').on('click', '.edit-btn', function() {
+        const index = $(this).closest('.task-item').data('index');
+        const task = tasks[index];
+        // Here you would populate and show the modal with task details for editing
+        // For brevity, this part is left out, but you'd set up the modal's form with current values
+        // and handle the save button to update the task in the tasks array
+    });
+
+    $('#filterCategory, #filterStatus').change(filterTasks);
+});
 </script>
 </body>
 </html>

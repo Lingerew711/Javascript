@@ -1,78 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Todo List</title>
-<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
-<style>
-    .todo-container {
-        max-width: 500px;
-        margin: 30px auto;
-        padding: 20px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .todo-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 0;
-        border-bottom: 1px solid #eee;
-    }
-    .todo-item.completed span {
-        text-decoration: line-through;
-    }
-    .delete-btn {
-        color: red;
-        cursor: pointer;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do App</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .task-form, .task-list {
+            margin: 20px 0;
+        }
+        input[type="text"], input[type="date"], select, button {
+            margin: 5px 0;
+            padding: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .task-item {
+            background: #e9ecef;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 5px solid #007bff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .task-item.completed {
+            border-left-color: #28a745;
+            text-decoration: line-through;
+        }
+        .countdown {
+            font-size: 0.8em;
+            color: #dc3545;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h1>My To-Do List</h1>
+        <div class="task-form">
+            <input type="text" id="taskTitle" placeholder="Task Title">
+            <input type="text" id="taskDescription" placeholder="Task Description">
+            <select id="taskCategory">
+                <option value="General">General</option>
+                <option value="Work">Work</option>
+                <option value="Urgent">Urgent</option>
+                <option value="Personal">Personal</option>
+            </select>
+            <input type="date" id="taskDueDate">
+            <button onclick="addTask()">Add Task</button>
+        </div>
+        <div class="filters">
+            <select id="filterCategory">
+                <option value="">All Categories</option>
+                <!-- Options will be similar to taskCategory -->
+            </select>
+            <select id="filterStatus">
+                <option value="">All Statuses</option>
+                <option value="Completed">Completed</option>
+                <option value="Pending">Pending</option>
+                <option value="Expired">Expired</option>
+            </select>
+        </div>
+        <div class="task-list" id="taskList"></div>
+    </div>
 
-<div class="container todo-container">
-    <h1 class="text-center">Todo List</h1>
-    <div class="input-group mb-3">
-        <input type="text" id="todoInput" class="form-control" placeholder="Enter new task..." aria-label="New task" aria-describedby="button-addon2">
-        <div class="input-group-append">
-            <button class="btn btn-outline-secondary" type="button" id="addTodo">Add</button>
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <!-- Modal content for editing task -->
+            <span class="close" onclick="closeModal()">&times;</span>
+            <input type="text" id="editTaskTitle">
+            <!-- Similar form fields for editing -->
+            <button onclick="saveTask()">Save Changes</button>
         </div>
     </div>
-    <ul id="todoList" class="list-group"></ul>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', (event) => {
-    const todoInput = document.getElementById('todoInput');
-    const addTodoButton = document.getElementById('addTodo');
-    const todoList = document.getElementById('todoList');
+    <script>
+        let tasks = [];
+        const taskList = document.getElementById('taskList');
+        
+        function addTask() {
+            const title = document.getElementById('taskTitle').value;
+            const description = document.getElementById('taskDescription').value;
+            const category = document.getElementById('taskCategory').value;
+            const dueDate = document.getElementById('taskDueDate').value;
 
-    // Add task
-    function addTask(text) {
-        const li = document.createElement('li');
-        li.className = 'list-group-item todo-item';
-        li.innerHTML = `<span>${text}</span><span class="delete-btn" onclick="deleteTask(this)">✖</span>`;
-        todoList.appendChild(li);
-        todoInput.value = ''; // Clear input
-
-        li.querySelector('span').addEventListener('click', function() {
-            this.parentElement.classList.toggle('completed');
-        });
-    }
-
-    // Delete task
-    function deleteTask(element) {
-        element.parentElement.remove();
-    }
-
-    // Event Listener for adding task via button or Enter key
-    addTodoButton.onclick = () => addTask(todoInput.value);
-    todoInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-            addTask(todoInput.value);
+            if (title) {
+                tasks.push({title, description, category, dueDate, completed: false, id: Date.now()});
+                renderTasks();
+                // Clear form fields
+            }
         }
-    });
-});
-</script>
 
+        function renderTasks(filterCategory = '', filterStatus = '') {
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                if ((!filterCategory || task.category === filterCategory) && 
+                    (!filterStatus || (filterStatus === 'Completed' && task.completed) || 
+                    (filterStatus === 'Pending' && !task.completed && new Date(task.dueDate) > new Date()) || 
+                    (filterStatus === 'Expired' && new Date(task.dueDate) <= new Date()))) {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = `task-item ${task.completed ? 'completed' : ''}`;
+                    taskEl.innerHTML = `
+                        <div>${task.title} - ${task.description} - ${task.category} - Due: ${task.dueDate}</div>
+                        <div>
+                            <button onclick="editTask(${task.id})">Edit</button>
+                            <button onclick="toggleComplete(${task.id})">${task.completed ? 'Undo' : 'Complete'}</button>
+                            <button onclick="deleteTask(${task.id})">Delete</button>
+                            <span class="countdown" data-due="${task.dueDate}"></span>
+                        </div>`;
+                    taskList.appendChild(taskEl);
+                }
+            });
+            updateCountdowns();
+        }
+
+        function editTask(id) {
+            // Implementation for opening modal and populating with task data
+            const modal = document.getElementById('editModal');
+            modal.style.display = "block";
+            // Populate modal with task details
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = "none";
+        }
+
+        function toggleComplete(id) {
+            const index = tasks.findIndex(task => task.id === id);
+            tasks[index].completed = !tasks[index].completed;
+            renderTasks();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(task => task.id !== id);
+            renderTasks();
+        }
+
+        function updateCountdowns() {
+            const countdowns = document.querySelectorAll('.countdown');
+            countdowns.forEach(countdown => {
+                const due = new Date(countdown.getAttribute('data-due'));
+                const now = new Date();
+                const diff = due - now;
+                if (diff > 0) {
+                    countdown.textContent = `${Math.floor(diff / (1000 * 60 * 60 * 24))} days left`;
+                } else {
+                    countdown.textContent = 'Expired';
+                }
+            });
+        }
+
+        // Initial render
+        renderTasks();
+
+        // Update countdowns every second
+        setInterval(updateCountdowns, 1000);
+    </script>
 </body>
 </html>
