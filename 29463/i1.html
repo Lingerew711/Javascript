@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Dungeon Crawler</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+    
+        /* Apply the new font and improve UI elements */
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            color: white;
+        }
+    
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #000;
+        }
+    
+        /* Make the game info and score visually appealing */
+        #info, #score {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            text-align: center;
+            padding: 15px;
+            font-size: 20px;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.5); /* Transparent background */
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    
+        #score {
+            top: 60px; /* Move the score below the game info */
+            font-weight: bold;
+            font-size: 22px;
+        }
+    
+        /* Fancy Game Over Modal */
+        #gameOverModal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            padding: 50px;
+            color: white;
+            font-size: 24px;
+            text-align: center;
+            border-radius: 10px;
+        }
+    
+        #gameOverModal button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: red;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+        }
+    
+        #gameOverModal button:hover {
+            background-color: darkred;
+        }
+    </style>
+    
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<div id="info">Use arrow keys to move the player. Avoid dangers and collect loot!</div>
+<div id="score">Score: 0 | Health: 100</div>
+
+<!-- Game Over Modal -->
+<div id="gameOverModal">
+    <p>Game Over! You ran out of health.</p>
+    <button onclick="resetGame()">Restart Game</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const TILE_SIZE = 40;
+    const MAP_WIDTH = 100;
+    const MAP_HEIGHT = 100;
+    const PLAYER_SIZE = TILE_SIZE * 0.8;
+    const MAX_ENEMIES = 30; // Increased number of enemies
+    const MAX_LOOT = 30;    // Increased number of loot
+
+    // Define Emoji for player, enemy, and loot
+    const playerEmoji = "😃";  // Smiling face emoji for player
+    const enemyEmoji = "👹";   // Monster emoji for enemy
+    const lootEmoji = "💰";    // Money bag emoji for loot
+
+    let player = {
+        x: Math.floor(MAP_WIDTH / 2),
+        y: Math.floor(MAP_HEIGHT / 2),
+        health: 100
+    };
+
+    let score = 0;
+    let loot = [];
+    let enemies = [];
+
+    const simplex = new SimplexNoise();
+    const map = [];
+
+    // Create the map with noise
+    for (let x = 0; x < MAP_WIDTH; x++) {
+        map[x] = [];
+        for (let y = 0; y < MAP_HEIGHT; y++) {
+            const value = simplex.noise2D(x * 0.1, y * 0.1);
+            map[x][y] = value > 0 ? 1 : 0; // 1 for ground, 0 for walls
+        }
+    }
+
+    // Function to spawn enemies randomly
+    function spawnEnemy() {
+        if (enemies.length < MAX_ENEMIES) {
+            let x = Math.floor(Math.random() * MAP_WIDTH);
+            let y = Math.floor(Math.random() * MAP_HEIGHT);
+            if (map[x][y] === 1) { // Only spawn on ground
+                enemies.push({ x, y, direction: getRandomDirection() });
+            }
+        }
+    }
+
+    // Function to spawn loot randomly
+    function spawnLoot() {
+        if (loot.length < MAX_LOOT) {
+            let x = Math.floor(Math.random() * MAP_WIDTH);
+            let y = Math.floor(Math.random() * MAP_HEIGHT);
+            if (map[x][y] === 1) { // Only spawn on ground
+                loot.push({ x, y });
+            }
+        }
+    }
+
+    // Initial enemies and loot spawning
+    function placeInitialLootAndEnemies() {
+        for (let i = 0; i < 15; i++) { // Spawn more enemies and loot initially
+            spawnEnemy();
+            spawnLoot();
+        }
+    }
+
+    placeInitialLootAndEnemies();
+
+    function drawMap() {
+        for (let x = 0; x < MAP_WIDTH; x++) {
+            for (let y = 0; y < MAP_HEIGHT; y++) {
+                if (map[x][y] === 1) {
+                    ctx.fillStyle = '#444'; // Ground
+                } else {
+                    ctx.fillStyle = '#111'; // Wall
+                }
+                ctx.fillRect(
+                    (x - player.x + Math.floor(canvas.width / TILE_SIZE / 2)) * TILE_SIZE,
+                    (y - player.y + Math.floor(canvas.height / TILE_SIZE / 2)) * TILE_SIZE,
+                    TILE_SIZE,
+                    TILE_SIZE
+                );
+            }
+        }
+    }
+
+    // Function to draw an emoji at a given position
+    function drawEmoji(emoji, x, y, size) {
+        ctx.font = `${size}px Arial`;
+        ctx.fillText(emoji, x, y);
+    }
+
+    function drawPlayer() {
+        const playerX = Math.floor(canvas.width / 2 - PLAYER_SIZE / 2);
+        const playerY = Math.floor(canvas.height / 2 + PLAYER_SIZE / 2);
+        drawEmoji(playerEmoji, playerX, playerY, TILE_SIZE);
+    }
+
+    function drawLootAndEnemies() {
+        loot.forEach(item => {
+            const lootX = (item.x - player.x + Math.floor(canvas.width / TILE_SIZE / 2)) * TILE_SIZE;
+            const lootY = (item.y - player.y + Math.floor(canvas.height / TILE_SIZE / 2)) * TILE_SIZE + TILE_SIZE;
+            drawEmoji(lootEmoji, lootX, lootY, TILE_SIZE);
+        });
+
+        enemies.forEach(enemy => {
+            const enemyX = (enemy.x - player.x + Math.floor(canvas.width / TILE_SIZE / 2)) * TILE_SIZE;
+            const enemyY = (enemy.y - player.y + Math.floor(canvas.height / TILE_SIZE / 2)) * TILE_SIZE + TILE_SIZE;
+            drawEmoji(enemyEmoji, enemyX, enemyY, TILE_SIZE);
+        });
+    }
+
+    // Function to get a random direction for enemy movement
+    function getRandomDirection() {
+        const directions = ['left', 'right', 'up', 'down'];
+        return directions[Math.floor(Math.random() * directions.length)];
+    }
+
+    // Function to move enemies randomly (without tracking the player)
+    function moveEnemies() {
+        enemies.forEach(enemy => {
+            let newX = enemy.x;
+            let newY = enemy.y;
+
+            switch (enemy.direction) {
+                case 'left':
+                    newX -= 1;
+                    break;
+                case 'right':
+                    newX += 1;
+                    break;
+                case 'up':
+                    newY -= 1;
+                    break;
+                case 'down':
+                    newY += 1;
+                    break;
+            }
+
+            // Ensure enemy doesn't move through walls
+            if (map[newX] && map[newX][newY] === 1) {
+                enemy.x = newX;
+                enemy.y = newY;
+            } else {
+                // Change direction if the enemy hits a wall
+                enemy.direction = getRandomDirection();
+            }
+        });
+    }
+
+   // Function to move the player
+function movePlayer(dx, dy) {
+    const newX = player.x + dx;
+    const newY = player.y + dy;
+
+    if (map[newX] && map[newX][newY] === 1) { // Only move if on ground
+        player.x = newX;
+        player.y = newY;
+
+        // Spawn new enemies and loot as the player moves
+        if (Math.random() < 0.1) spawnEnemy(); // 10% chance of spawning an enemy on move
+        if (Math.random() < 0.15) spawnLoot();  // 15% chance of spawning loot on move
+
+        // Check if player collides with loot
+        loot = loot.filter(item => {
+            if (item.x === player.x && item.y === player.y) {
+                score += 10; // Increase score
+                updateScore();
+                spawnLoot();  // Spawn a new loot when one is collected
+                return false; // Remove collected loot
+            }
+            return true;
+        });
+
+        // Check if player collides with enemies
+        enemies.forEach(enemy => {
+            if (enemy.x === player.x && enemy.y === player.y) {
+                player.health -= 20; // Reduce health
+                if (player.health < 0) player.health = 0; // Clamp health at 0
+                updateScore();
+                if (player.health <= 0) {
+                    showGameOverPopup(); // Show fancy game over popup
+                }
+            }
+        });
+    }
+}
+
+// Function to update the score and health display
+function updateScore() {
+    document.getElementById('score').innerHTML = `Score: ${score} | Health: ${player.health}`;
+}
+
+
+    function showGameOverPopup() {
+        const gameOverModal = document.getElementById('gameOverModal');
+        gameOverModal.style.display = 'block';
+    }
+
+    function resetGame() {
+        player.x = Math.floor(MAP_WIDTH / 2);
+        player.y = Math.floor(MAP_HEIGHT / 2);
+        player.health = 100;
+        score = 0;
+        loot = [];
+        enemies = [];
+        placeInitialLootAndEnemies();
+        updateScore();
+        draw();
+        document.getElementById('gameOverModal').style.display = 'none'; // Hide game over modal
+    }
+
+    // Event Listener for player movement
+    window.addEventListener('keydown', (e) => {
+        switch (e.code) {
+            case 'ArrowUp':
+                movePlayer(0, -1);
+                break;
+            case 'ArrowDown':
+                movePlayer(0, 1);
+                break;
+            case 'ArrowLeft':
+                movePlayer(-1, 0);
+                break;
+            case 'ArrowRight':
+                movePlayer(1, 0);
+                break;
+        }
+        moveEnemies(); // Move enemies after the player moves
+        draw();
+    });
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawMap();
+        drawLootAndEnemies();
+        drawPlayer();
+    }
+
+    draw();
+
+    // Handle resizing
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        draw();
+    });
+</script>
+
+</body>
+</html>

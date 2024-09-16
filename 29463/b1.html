@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dungeon Crawler</title>
+<style>
+body { margin: 0; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #000; }
+canvas { display: block; }
+#ui { position: absolute; top: 10px; left: 10px; color: white; font-family: Arial, sans-serif; }
+#gameOver { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.7); color: white; padding: 20px; border-radius: 5px; }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<div id="ui">
+  Health: <span id="health">100</span> | Score: <span id="score">0</span>
+</div>
+<div id="gameOver">
+  <h2>Game Over</h2>
+  <p>Your Score: <span id="finalScore"></span></p>
+  <button onclick="resetGame()">Restart</button>
+</div>
+
+<script>
+// Simplex noise for procedural generation
+const simplex = new SimplexNoise();
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const tileSize = 40;
+
+let map, player, enemies, loot, score, health;
+
+function setupGame() {
+    map = generateMap();
+    player = { x: Math.floor(map[0].length / 2), y: Math.floor(map.length / 2), symbol: '😃' };
+    enemies = spawnEntities(10, '👹');
+    loot = spawnEntities(15, '💰');
+    score = 0;
+    health = 100;
+    updateUI();
+}
+
+function generateMap() {
+    const noiseMap = [];
+    for(let y = 0; y < Math.floor(canvas.height / tileSize); y++) {
+        noiseMap[y] = [];
+        for(let x = 0; x < Math.floor(canvas.width / tileSize); x++) {
+            const value = simplex.noise2D(x / 10, y / 10);
+            noiseMap[y][x] = value > 0 ? 0 : 1; // 1 for ground, 0 for wall
+        }
+    }
+    return noiseMap;
+}
+
+function spawnEntities(count, symbol) {
+    const entities = [];
+    for(let i = 0; i < count; i++) {
+        let pos;
+        do {
+            pos = {x: Math.floor(Math.random() * map[0].length), y: Math.floor(Math.random() * map.length)};
+        } while(!isWalkable(pos.x, pos.y));
+        entities.push({...pos, symbol});
+    }
+    return entities;
+}
+
+function isWalkable(x, y) {
+    if(y < 0 || y >= map.length || x < 0 || x >= map[0].length) return false;
+    return map[y][x] === 1;
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw map
+    for(let y = 0; y < map.length; y++) {
+        for(let x = 0; x < map[y].length; x++) {
+            ctx.fillStyle = map[y][x] ? '#444' : '#111';
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+        }
+    }
+
+    // Draw entities
+    [player, ...enemies, ...loot].forEach(e => {
+        ctx.font = '30px Arial';
+        ctx.fillText(e.symbol, e.x * tileSize, (e.y + 1) * tileSize);
+    });
+}
+
+function update() {
+    movePlayer();
+    moveEnemies();
+    checkCollisions();
+    draw();
+    if(health > 0) requestAnimationFrame(update);
+}
+
+function movePlayer() {
+    document.addEventListener('keydown', (e) => {
+        let newX = player.x, newY = player.y;
+        if(e.key === 'ArrowUp') newY--;
+        else if(e.key === 'ArrowDown') newY++;
+        else if(e.key === 'ArrowLeft') newX--;
+        else if(e.key === 'ArrowRight') newX++;
+        
+        if(isWalkable(newX, newY)) {
+            player.x = newX;
+            player.y = newY;
+        }
+    });
+}
+
+function moveEnemies() {
+    enemies.forEach(enemy => {
+        const directions = [[-1,0], [1,0], [0,-1], [0,1]];
+        const [dx, dy] = directions[Math.floor(Math.random() * 4)];
+        const newX = enemy.x + dx;
+        const newY = enemy.y + dy;
+        if(isWalkable(newX, newY)) {
+            enemy.x = newX;
+            enemy.y = newY;
+        }
+    });
+}
+
+function checkCollisions() {
+    // Check for loot collection
+    loot = loot.filter(l => {
+        if(l.x === player.x && l.y === player.y) {
+            score += 10;
+            updateUI();
+            return false;
+        }
+        return true;
+    });
+    if(loot.length < 15) spawnEntities(1, '💰');
+
+    // Check for enemy collision
+    enemies.forEach((enemy, index) => {
+        if(enemy.x === player.x && enemy.y === player.y) {
+            health -= 20;
+            updateUI();
+            if(health <= 0) gameOver();
+        }
+    });
+}
+
+function updateUI() {
+    document.getElementById('health').textContent = health;
+    document.getElementById('score').textContent = score;
+}
+
+function gameOver() {
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('gameOver').style.display = 'block';
+}
+
+function resetGame() {
+    document.getElementById('gameOver').style.display = 'none';
+    setupGame();
+    update();
+}
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    map = generateMap(); // Regenerate map to fit new size
+});
+
+setupGame();
+update();
+</script>
+</body>
+</html>

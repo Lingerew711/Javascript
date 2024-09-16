@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dungeon Crawler</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #000; 
+        }
+        #gameCanvas {
+            border: 1px solid #fff;
+            display: block;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+<div id="ui">
+    <div>Health: <span id="health">100</span></div>
+    <div>Score: <span id="score">0</span></div>
+</div>
+<canvas id="gameCanvas"></canvas>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const tileSize = 40;
+    let gameMap, player, enemies = [], loot = [];
+
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        initGame();
+    }
+
+    function generateMap(width, height) {
+        let map = [];
+        for(let y = 0; y < height; y++) {
+            map[y] = [];
+            for(let x = 0; x < width; x++) {
+                // Simple noise simulation for map generation
+                map[y][x] = (Math.random() > 0.6) ? 1 : 0; // 1 for wall, 0 for ground
+            }
+        }
+        return map;
+    }
+
+    function Player() {
+        this.x = Math.floor(canvas.width / 2 / tileSize) * tileSize;
+        this.y = Math.floor(canvas.height / 2 / tileSize) * tileSize;
+        this.health = 100;
+    }
+
+    function spawnEnemies(count) {
+        for(let i = 0; i < count; i++) {
+            let pos = findFreeSpot();
+            if(pos) enemies.push({x: pos.x, y: pos.y});
+        }
+    }
+
+    function spawnLoot(count) {
+        for(let i = 0; i < count; i++) {
+            let pos = findFreeSpot();
+            if(pos) loot.push({x: pos.x, y: pos.y});
+        }
+    }
+
+    function findFreeSpot() {
+        let pos;
+        do {
+            pos = {x: Math.floor(Math.random() * (canvas.width / tileSize)) * tileSize, 
+                   y: Math.floor(Math.random() * (canvas.height / tileSize)) * tileSize};
+        } while(gameMap[Math.floor(pos.y / tileSize)][Math.floor(pos.x / tileSize)] !== 0 || 
+                (pos.x === player.x && pos.y === player.y));
+        return pos;
+    }
+
+    function update() {
+        // Player movement logic, collision detection, etc.
+        if(player.health <= 0) gameOver();
+        // Enemy movement
+        enemies.forEach(e => {
+            let directions = [[0,-tileSize],[0,tileSize],[-tileSize,0],[tileSize,0]];
+            let move = directions[Math.floor(Math.random() * directions.length)];
+            if(gameMap[(e.y + move[1]) / tileSize] && gameMap[(e.y + move[1]) / tileSize][(e.x + move[0]) / tileSize] === 0) {
+                e.x += move[0];
+                e.y += move[1];
+            }
+        });
+    }
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Render map, player, enemies, loot
+        for(let y = 0; y < gameMap.length; y++) {
+            for(let x = 0; x < gameMap[y].length; x++) {
+                ctx.fillStyle = gameMap[y][x] ? '#111' : '#444';
+                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            }
+        }
+        ctx.fillStyle = 'yellow'; // Player color
+        ctx.font = '30px Arial';
+        ctx.fillText('😃', player.x, player.y + tileSize - 10); // Adjusting for emoji alignment
+        enemies.forEach(e => ctx.fillText('👹', e.x, e.y + tileSize - 10));
+        loot.forEach(l => ctx.fillText('💰', l.x, l.y + tileSize - 10));
+        document.getElementById('health').textContent = player.health;
+        document.getElementById('score').textContent = score; // Assume score is global or managed elsewhere
+    }
+
+    function gameOver() {
+        alert('Game Over! Your Score: ' + score);
+        initGame();
+    }
+
+    function initGame() {
+        gameMap = generateMap(canvas.width / tileSize, canvas.height / tileSize);
+        player = new Player();
+        enemies = [];
+        loot = [];
+        spawnEnemies(10);
+        spawnLoot(15);
+    }
+
+    window.addEventListener('resize', resizeCanvas, false);
+    window.addEventListener('keydown', function(e) {
+        // Handle player movement with arrow keys
+        // This would involve checking for walls and moving the player
+    });
+
+    resizeCanvas();
+    let gameLoop = setInterval(function() {
+        update();
+        render();
+    }, 1000/30); // 30 FPS
+</script>
+</body>
+</html>
