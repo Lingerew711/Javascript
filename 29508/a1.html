@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Interactive Billiards Game</title>
+<style>
+    body { margin: 0; background: #006400; overflow: hidden; }
+    #gameCanvas { background: #004d00; display: block; }
+    #debugPanel { position: absolute; top: 10px; right: 10px; color: white; background: rgba(0,0,0,0.5); padding: 10px; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<div id="debugPanel" style="display:none;"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
+<script>
+// Game setup
+const canvas = document.getElementById('gameCanvas');
+const engine = Matter.Engine.create();
+const world = engine.world;
+const render = Matter.Render.create({
+    canvas: canvas,
+    engine: engine,
+    options: {
+        width: 800,
+        height: 400,
+        wireframes: false,
+        background: 'transparent'
+    }
+});
+
+// Game objects setup (balls, table, cue)
+let balls = [];
+let tableBounds = [];
+let cue;
+
+function setupGame() {
+    // Setup table bounds, balls, and cue here
+    // Example for one ball:
+    balls.push(Matter.Bodies.circle(200, 200, 20, { restitution: 0.9, friction: 0.01 }));
+    Matter.World.add(world, balls);
+    
+    // Setup table walls
+    tableBounds = [
+        Matter.Bodies.rectangle(400, 0, 800, 20, { isStatic: true }),
+        // Add more walls...
+    ];
+    Matter.World.add(world, tableBounds);
+
+    // Setup cue (simplified for this example)
+    cue = {
+        position: {x: 100, y: 200},
+        angle: 0,
+        power: 0
+    };
+}
+
+// Mouse and touch controls
+canvas.addEventListener('mousedown', startAim);
+canvas.addEventListener('touchstart', startAim);
+
+function startAim(e) {
+    // Handle aiming logic
+}
+
+function update() {
+    // Update game logic, check collisions, update UI
+    updateDebugPanel();
+    requestAnimationFrame(update);
+}
+
+function updateDebugPanel() {
+    const debugPanel = document.getElementById('debugPanel');
+    debugPanel.innerHTML = `FPS: ${Math.round(1000 / engine.timing.lastDelta)}<br>Balls: ${balls.length}`;
+}
+
+// Run the game
+setupGame();
+Matter.Engine.run(engine);
+Matter.Render.run(render);
+update();
+
+// UI Updates would typically involve more complex interactions with the DOM or Canvas drawing
+</script>
+</body>
+</html>
