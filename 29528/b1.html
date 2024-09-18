@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mac Virtual Keyboard</title>
+<style>
+    body, html {
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #f0f0f0;
+        margin: 0;
+    }
+    .keyboard {
+        display: grid;
+        grid-template-columns: repeat(14, 1fr);
+        gap: 5px;
+        padding: 10px;
+        background: #c0c0c0;
+        border-radius: 10px;
+        width: 80%;
+        max-width: 1200px;
+    }
+    .key {
+        background: #ffffff;
+        border: 1px solid #b5b5b5;
+        border-radius: 4px;
+        text-align: center;
+        padding: 10px 0;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+    .key:hover, .key.active {
+        background: #e0e0e0;
+    }
+    .key.shift, .key.caps, .key.cmd, .key.ctrl, .key.fn {
+        background: #d0d0d0;
+    }
+    .textarea-container {
+        width: 80%;
+        margin-bottom: 20px;
+    }
+    #textDisplay {
+        width: 100%;
+        height: 100px;
+        padding: 10px;
+    }
+</style>
+</head>
+<body>
+
+<div class="textarea-container">
+    <textarea id="textDisplay" placeholder="Type here..."></textarea>
+</div>
+<div class="keyboard" id="keyboard">
+    <!-- Keys will be dynamically added here -->
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    const keys = [
+        '`', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'delete',
+        'tab', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\',
+        'caps', 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', 'return',
+        'shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 'shift',
+        'fn', 'ctrl', 'opt', 'cmd', ' ', 'cmd', 'opt'
+    ];
+
+    const $keyboard = $('#keyboard');
+    let shiftPressed = false;
+    let capsLock = false;
+
+    // Generate keyboard
+    keys.forEach(key => {
+        let keyClass = 'key';
+        if(['shift', 'caps', 'cmd', 'ctrl', 'fn', 'return', 'delete', 'opt'].includes(key)) {
+            keyClass += ` ${key}`;
+        }
+        $keyboard.append(`<div class="${keyClass}">${key === ' ' ? 'Space' : key}</div>`);
+    });
+
+    // Function to handle key presses
+    function handleKeyPress(key) {
+        const $textDisplay = $('#textDisplay');
+        switch(key) {
+            case 'delete': 
+                $textDisplay.val($textDisplay.val().slice(0, -1)); break;
+            case 'tab': 
+                $textDisplay.val($textDisplay.val() + '\t'); break;
+            case 'caps':
+                capsLock = !capsLock;
+                $('.key.caps').toggleClass('active', capsLock);
+                break;
+            case 'return': 
+                $textDisplay.val($textDisplay.val() + '\n'); break;
+            case 'shift': 
+                shiftPressed = !shiftPressed; break;
+            case ' ':
+                $textDisplay.val($textDisplay.val() + ' '); break;
+            default:
+                let char = shiftPressed ^ capsLock ? key.toUpperCase() : key.toLowerCase();
+                $textDisplay.val($textDisplay.val() + char);
+        }
+    }
+
+    // Virtual key click
+    $('.key').on('click', function() {
+        let key = $(this).text().toLowerCase();
+        if(key === 'space') key = ' ';
+        handleKeyPress(key);
+        $(this).addClass('active');
+        setTimeout(() => $(this).removeClass('active'), 100);
+    });
+
+    // Physical keyboard events
+    $(document).on('keydown', function(e) {
+        let key = e.key;
+        if(key === ' ') key = 'Space';
+        let $key = $(`.key:contains(${key})`);
+        if($key.length) {
+            $key.addClass('active');
+            handleKeyPress(key.toLowerCase());
+        }
+        if(key === 'Shift') shiftPressed = true;
+    }).on('keyup', function(e) {
+        let key = e.key;
+        if(key === ' ') key = 'Space';
+        $(`.key:contains(${key})`).removeClass('active');
+        if(key === 'Shift') shiftPressed = false;
+    });
+});
+</script>
+
+</body>
+</html>

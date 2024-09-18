@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mac Style Virtual Keyboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/css/bootstrap.min.css">
+<style>
+body {
+    background-color: #f0f0f0;
+}
+
+.keyboard-key {
+    background-color: #d1d5da;
+    border: none;
+    border-radius: 6px;
+    color: black;
+    padding: 10px 15px;
+    margin: 2px;
+    font-size: 14px;
+    box-shadow: 0 2px 1px rgba(0, 0, 0, 0.2);
+    transition: all 0.1s ease;
+}
+
+.keyboard-key:active, .key-active {
+    background-color: #959da5;
+    transform: translateY(2px);
+    box-shadow: none;
+}
+
+#keyboard {
+    background: #e5e5e5;
+    padding: 10px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.special-key {
+    background-color: #a1a1a1;
+}
+
+#textInput {
+    width: 100%;
+}
+</style>
+</head>
+<body>
+<div class="container mt-5">
+    <textarea id="textInput" class="form-control" rows="3" placeholder="Type here..."></textarea>
+    <div id="keyboard" class="mt-4"></div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    const keyboardLayout = [
+        '` 1 2 3 4 5 6 7 8 9 0 - = {bksp}',
+        '{tab} q w e r t y u i o p [ ] \\',
+        '{lock} a s d f g h j k l ; \' {enter}',
+        '{shift} z x c v b n m , . / {shift}',
+        '.com @ {space}'
+    ];
+
+    const keyboard = document.getElementById('keyboard');
+    const textInput = document.getElementById('textInput');
+
+    function createKeyboard() {
+        keyboardLayout.forEach(row => {
+            const rowDiv = document.createElement('div');
+            row.split(' ').forEach(key => {
+                let button = document.createElement('button');
+                button.textContent = key === '{space}' ? 'Space' : key.replace(/[{}]/g, '');
+                button.className = 'keyboard-key' + (['{bksp}', '{tab}', '{lock}', '{enter}', '{shift}', '{space}'].includes(key) ? ' special-key' : '');
+                button.id = key.replace(/[{}]/g, '').toLowerCase();
+                button.onclick = () => handleKeyPress(button.id);
+                rowDiv.appendChild(button);
+            });
+            keyboard.appendChild(rowDiv);
+        });
+    }
+
+    function handleKeyPress(key) {
+        let cursorPos = textInput.selectionStart;
+        switch(key) {
+            case 'bksp':
+                textInput.value = textInput.value.slice(0, cursorPos - 1) + textInput.value.slice(cursorPos);
+                textInput.selectionStart = textInput.selectionEnd = cursorPos - 1;
+                break;
+            case 'enter':
+                textInput.value = textInput.value.slice(0, cursorPos) + '\n' + textInput.value.slice(cursorPos);
+                textInput.selectionStart = textInput.selectionEnd = cursorPos + 1;
+                break;
+            case 'tab':
+                textInput.value = textInput.value.slice(0, cursorPos) + '\t' + textInput.value.slice(cursorPos);
+                textInput.selectionStart = textInput.selectionEnd = cursorPos + 1;
+                break;
+            case 'space':
+                textInput.value = textInput.value.slice(0, cursorPos) + ' ' + textInput.value.slice(cursorPos);
+                textInput.selectionStart = textInput.selectionEnd = cursorPos + 1;
+                break;
+            default:
+                textInput.value = textInput.value.slice(0, cursorPos) + key + textInput.value.slice(cursorPos);
+                textInput.selectionStart = textInput.selectionEnd = cursorPos + 1;
+        }
+        // Visual feedback for clicked key
+        document.getElementById(key).classList.add('key-active');
+        setTimeout(() => document.getElementById(key).classList.remove('key-active'), 100);
+    }
+
+    document.addEventListener('keydown', (e) => {
+        e.preventDefault(); // Prevent default action to avoid double input in some cases
+        handleKeyPress(e.key === ' ' ? 'space' : e.key);
+        let keyElement = document.getElementById(e.key === ' ' ? 'space' : e.key);
+        if(keyElement) {
+            keyElement.classList.add('key-active');
+            setTimeout(() => keyElement.classList.remove('key-active'), 100);
+        }
+    });
+
+    createKeyboard();
+});
+</script>
+</body>
+</html>
