@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Egg Catching Game</title>
+<style>
+    body {
+        background-color: #87CEEB; /* Sky blue background */
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+    }
+    #gameContainer {
+        position: relative;
+        width: 800px;
+        height: 600px;
+        background: #F0E68C; /* Khaki background for ground */
+        border: 3px solid #000;
+        overflow: hidden;
+    }
+    #basket {
+        position: absolute;
+        bottom: 10px;
+        width: 100px;
+        height: 80px;
+        background: url('https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/basket.png') no-repeat;
+        background-size: contain;
+    }
+    .egg {
+        position: absolute;
+        width: 30px;
+        height: 40px;
+        background: url('egg.png') no-repeat; /* Assume there's a simple egg image for this example */
+        background-size: contain;
+    }
+    .brokenEgg {
+        background-image: url('https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/bullseye1.png');
+    }
+    .chicken {
+        position: absolute;
+        width: 70px;
+        height: 70px;
+        background: url('https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/hen-right.png') no-repeat;
+        background-size: contain;
+    }
+    #score, #lives {
+        position: absolute;
+        top: 10px;
+        font-size: 20px;
+        font-weight: bold;
+    }
+    #score { left: 10px; }
+    #lives { right: 10px; }
+    #restart {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 10px 20px;
+        font-size: 20px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+<div id="gameContainer">
+    <div id="basket"></div>
+    <div id="score">Score: 0</div>
+    <div id="lives">Lives: 3</div>
+    <button id="restart">Restart Game</button>
+</div>
+<script>
+    const basket = document.getElementById('basket');
+    const gameContainer = document.getElementById('gameContainer');
+    const scoreDisplay = document.getElementById('score');
+    const livesDisplay = document.getElementById('lives');
+    const restartButton = document.getElementById('restart');
+    let score = 0;
+    let lives = 3;
+    let gameSpeed = 1000;
+    let eggInterval;
+
+    document.addEventListener('mousemove', e => {
+        let x = e.clientX - gameContainer.getBoundingClientRect().left - (basket.offsetWidth / 2);
+        x = Math.max(0, Math.min(x, gameContainer.offsetWidth - basket.offsetWidth));
+        basket.style.left = `${x}px`;
+    });
+
+    function createEgg() {
+        const egg = document.createElement('div');
+        egg.className = 'egg';
+        const startX = Math.random() * (gameContainer.offsetWidth - 30);
+        egg.style.left = `${startX}px`;
+        egg.style.top = '0px';
+        gameContainer.appendChild(egg);
+
+        let pos = 0;
+        const dropInterval = setInterval(() => {
+            if (pos < gameContainer.offsetHeight - egg.offsetHeight - basket.offsetHeight) {
+                pos += 5;
+                egg.style.top = `${pos}px`;
+            } else {
+                checkCatch(egg, dropInterval);
+            }
+        }, 20);
+    }
+
+    function checkCatch(egg, intervalId) {
+        clearInterval(intervalId);
+        const basketRect = basket.getBoundingClientRect();
+        const eggRect = egg.getBoundingClientRect();
+
+        if (eggRect.left < basketRect.right && 
+            eggRect.right > basketRect.left && 
+            eggRect.bottom > basketRect.top && 
+            eggRect.top < basketRect.bottom) {
+            // Egg caught
+            score++;
+            scoreDisplay.textContent = `Score: ${score}`;
+            if (score % 5 === 0 && gameSpeed > 200) {
+                gameSpeed -= 100;
+                clearInterval(eggInterval);
+                eggInterval = setInterval(createEgg, gameSpeed);
+            }
+        } else {
+            // Egg missed
+            egg.classList.add('brokenEgg');
+            lives--;
+            livesDisplay.textContent = `Lives: ${lives}`;
+            if (lives <= 0) endGame();
+        }
+        egg.remove();
+    }
+
+    function endGame() {
+        clearInterval(eggInterval);
+        alert(`Game Over! Your score: ${score}`);
+        restartButton.style.display = 'block';
+    }
+
+    restartButton.onclick = function() {
+        score = 0;
+        lives = 3;
+        gameSpeed = 1000;
+        scoreDisplay.textContent = 'Score: 0';
+        livesDisplay.textContent = 'Lives: 3';
+        restartButton.style.display = 'none';
+        eggInterval = setInterval(createEgg, gameSpeed);
+    };
+
+    // Start the game
+    eggInterval = setInterval(createEgg, gameSpeed);
+</script>
+</body>
+</html>

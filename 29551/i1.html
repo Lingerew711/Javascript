@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Page Title</title>
+<style>
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  font-family: sans-serif;
+}
+
+#container {
+  height: 90%;
+  width: 90%;
+  margin-left: 5%;
+  position: relative;
+  border: 1px solid red;
+  overflow: hidden;
+  background-color: #31b6ce;
+}
+
+#score_help {
+  text-align: center;
+  font-size: 25px;
+  background-color: #eaeaea;
+}
+
+#branch {
+  position: absolute;
+  height: 2%;
+  width: 100%;
+  background-color: #7b2e00;
+  top: 23%;
+}
+
+.hen {
+  position: absolute;
+  height: 15%;
+  width: 8%;
+  top: 10%;
+  background: url("https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/hen-right.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  z-index: 100;
+}
+
+#hen1 {
+  left: 20%;
+}
+
+#hen2 {
+  left: 40%;
+}
+
+#hen3 {
+  left: 60%;
+}
+
+.egg {
+  position: absolute;
+  top: 18%;
+  height: 5%;
+  width: 2%;
+  background-color: #fff;
+  border-radius: 50%;
+  z-index: 99;
+}
+
+#egg1 {
+  left: calc(20% + 8%/2 - 2%/2);
+}
+
+#egg2 {
+  left: calc(40% + 8%/2 - 2%/2);
+}
+
+#egg3 {
+  left: calc(60% + 8%/2 - 2%/2);
+}
+
+.bullseye {
+  display: none;
+  position: absolute;
+  bottom: 0px;
+  height: 7%;
+  width: 7%;
+  background: url("https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/bullseye1.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  z-index: 11;
+}
+
+#bullseye1 {
+  left: calc(20% + 8%/2 - 7%/2);
+}
+
+#bullseye2 {
+  left: calc(40% + 8%/2 - 7%/2);
+}
+
+#bullseye3 {
+  left: calc(60% + 8%/2 - 7%/2);
+}
+
+#floor {
+  position: absolute;
+  height: 7%;
+  width: 100%;
+  background-color: #292929;
+  bottom: 0;
+  z-index: 10;
+}
+
+#basket {
+  height: 100px;
+  width: 85px;
+  position: absolute;
+  bottom: 5px;
+  background: url("https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/basket.png");
+  background-size: cover;
+  background-repeat: no-repeat;
+  text-align: center;
+  z-index: 11;
+}
+
+#score_1 {
+  position: absolute;
+  color: #424242;
+  font-size: 30px;
+  top: 45%;
+  left: 30%;
+}
+
+#restart {
+  border: 0;
+  position: absolute;
+  height: 10%;
+  width: 100%;
+  background-color: fuchsia;
+  color: white;
+  top: 40%;
+  font-size: 35px;
+  display: none;
+  cursor: pointer;
+}
+
+</style>
+</head>
+<body>
+<div id="container">
+
+  <div id="score_help"> Score:
+    <span id="score">0</span> | Life:
+    <span id="life"></span> | Use mouse to control
+  </div>
+
+  <div id="branch"></div>
+
+  <div id="hen1" class="hen"></div>
+  <div id="hen2" class="hen"></div>
+  <div id="hen3" class="hen"></div>
+
+  <div id="egg1" class="egg" data-bullseye='1'></div>
+  <div id="egg2" class="egg" data-bullseye='2'></div>
+  <div id="egg3" class="egg" data-bullseye='3'></div>
+
+  <div id="bullseye1" class="bullseye"></div>
+  <div id="bullseye2" class="bullseye"></div>
+  <div id="bullseye3" class="bullseye"></div>
+
+  <div id="basket">
+    <span id="score_1"></span>
+  </div>
+
+  <div id="floor"></div>
+
+  <button id="restart">Restart</button>
+
+</div>
+<script>
+// Declaration of all the necessary variables
+var basket = document.getElementById("basket"),
+    container = document.getElementById("container"),
+    eggs = document.querySelectorAll(".egg"),
+    egg1 = document.getElementById("egg1"),
+    egg2 = document.getElementById("egg2"),
+    egg3 = document.getElementById("egg3"),
+    restart = document.getElementById("restart"),
+    score_span = document.getElementById("score"),
+    score_1 = document.getElementById("score_1"),
+    life_span = document.getElementById("life"),
+    floor = document.getElementById("floor"),
+    basket_height = basket.clientHeight,
+    container_height = container.clientHeight,
+    egg_height = eggs[0].clientHeight,
+    egg_initial_position = parseInt(window.getComputedStyle(eggs[0]).getPropertyValue("top")),
+    score = 0,
+    life = 5,
+    speed = 2,
+    max_speed = 15,
+    counter = 0,
+    score_updated = false,
+    the_game = null,
+    anim_id = null,
+    egg_current_position = 0,
+    egg_top = 0,
+    basket_top = container_height - basket_height,
+    bullseye_num = 0;
+
+life_span.textContent = life;
+
+// Function to start the game
+function startGame() {
+    function gameLoop() {
+        eggs.forEach(function(egg) {
+            if (checkEggHitsFloor(egg) || checkEggHitsBasket(egg)) {
+                setEggToInitialPosition(egg);
+            } else {
+                eggDown(egg);
+            }
+        });
+
+        if (life > 0) {
+            anim_id = requestAnimationFrame(gameLoop);
+        } else {
+            stopGame();
+        }
+    }
+
+    resetGame();
+    anim_id = requestAnimationFrame(gameLoop);
+}
+
+// Resetting the game to its initial state
+function resetGame() {
+    score = 0;
+    life = 5;
+    speed = 2;
+    score_span.textContent = score;
+    score_1.textContent = score;
+    life_span.textContent = life;
+
+    eggs.forEach(egg => {
+        setEggToInitialPosition(egg);
+    });
+
+    document.querySelectorAll('.bullseye').forEach(function(bullseye) {
+        bullseye.style.display = 'none';
+    });
+}
+
+// Move the egg down
+function eggDown(egg) {
+    egg_current_position = parseInt(window.getComputedStyle(egg).getPropertyValue("top"));
+    egg.style.top = `${egg_current_position + speed}px`;
+}
+
+// Check if the egg hits the floor
+function checkEggHitsFloor(egg) {
+    if (collision(egg, floor)) {
+        showBullsEye(egg);
+        decrementLife();
+        return true;
+    }
+    return false;
+}
+
+// Set the egg back to its initial position
+function setEggToInitialPosition(egg) {
+    egg.style.top = `${egg_initial_position}px`;
+}
+
+// Show the bullseye animation
+function showBullsEye(egg) {
+    bullseye_num = egg.dataset.bullseye;
+    var bullseye = document.getElementById("bullseye" + bullseye_num);
+    bullseye.style.display = 'block';
+    setTimeout(function() {
+        bullseye.style.display = 'none';
+    }, 800);
+}
+
+// Decrement life
+function decrementLife() {
+    life--;
+    life_span.textContent = life;
+}
+
+// Check if the egg hits the basket
+function checkEggHitsBasket(egg) {
+    if (collision(egg, basket)) {
+        egg_top = parseInt(window.getComputedStyle(egg).getPropertyValue("top"));
+        if (egg_top < basket_top) {
+            updateScore();
+            return true;
+        }
+    }
+    return false;
+}
+
+// Update the score
+function updateScore() {
+    score++;
+    score_span.textContent = score;
+    score_1.textContent = score;
+    if (score % 10 === 0 && speed < max_speed) {
+        speed++;
+    }
+}
+
+// Stop the game
+function stopGame() {
+    cancelAnimationFrame(anim_id);
+    restart.style.display = 'block'; // Show restart button
+}
+
+// Collision detection
+function collision(div1, div2) {
+    var rect1 = div1.getBoundingClientRect();
+    var rect2 = div2.getBoundingClientRect();
+    return !(rect1.bottom < rect2.top || rect1.top > rect2.bottom ||
+             rect1.right < rect2.left || rect1.left > rect2.right);
+}
+
+// Event listeners
+document.addEventListener("mousemove", function(e) {
+    basket.style.left = e.pageX + 'px';
+});
+
+restart.addEventListener("click", function() {
+    restart.style.display = 'none'; // Hide restart button
+    startGame();
+});
+
+// Initialize the game on window load
+window.onload = function() {
+    startGame();
+};
+</script>
+
+</body>
+</html>
+
+

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Egg Catching Game</title>
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #f0f0f0;
+    }
+    #gameArea {
+        width: 800px;
+        height: 600px;
+        border: 2px solid #000;
+        position: relative;
+        overflow: hidden;
+        background: url('https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/background.png') repeat;
+    }
+    .chicken {
+        position: absolute;
+        top: 0;
+        width: 100px;
+        height: auto;
+    }
+    #basket {
+        position: absolute;
+        bottom: 10px;
+        width: 120px;
+        height: auto;
+        left: calc(50% - 60px);
+    }
+    .egg, .broken-egg {
+        position: absolute;
+        width: 40px;
+        height: auto;
+    }
+    #score, #lives {
+        position: absolute;
+        top: 10px;
+        font-family: Arial, sans-serif;
+        font-size: 20px;
+    }
+    #score { left: 10px; }
+    #lives { right: 10px; }
+    #restart {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        padding: 10px 20px;
+        font-size: 20px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+<div id="gameArea">
+    <div id="score">Score: 0</div>
+    <div id="lives">Lives: 3</div>
+    <img id="basket" src="https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/basket.png" alt="Basket">
+    <button id="restart">Restart Game</button>
+</div>
+<script>
+    const gameArea = document.getElementById('gameArea');
+    const basket = document.getElementById('basket');
+    let score = 0, lives = 3, gameSpeed = 5, isGameOver = false;
+
+    function spawnChicken() {
+        const chicken = document.createElement('img');
+        chicken.src = 'https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/hen-right.png';
+        chicken.className = 'chicken';
+        chicken.style.left = `${Math.random() * (gameArea.offsetWidth - 100)}px`;
+        gameArea.appendChild(chicken);
+        setTimeout(() => gameArea.removeChild(chicken), 5000); // Chicken disappears after 5 seconds
+    }
+
+    function spawnEgg(x) {
+        const egg = document.createElement('img');
+        egg.src = 'https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/egg.png';
+        egg.className = 'egg';
+        egg.style.left = `${x}px`;
+        egg.style.top = '100px';
+        gameArea.appendChild(egg);
+
+        function fall() {
+            if (!isGameOver) {
+                let top = parseInt(egg.style.top) || 0;
+                if (top < gameArea.offsetHeight - 40) {
+                    egg.style.top = `${top + gameSpeed}px`;
+                    requestAnimationFrame(fall);
+                } else {
+                    // Egg missed
+                    gameArea.removeChild(egg);
+                    eggMissed();
+                }
+            }
+        }
+        fall();
+    }
+
+    function eggMissed() {
+        lives--;
+        if (lives <= 0) {
+            gameOver();
+        } else {
+            document.getElementById('lives').textContent = `Lives: ${lives}`;
+            spawnBrokenEgg(parseInt(basket.style.left) + 60);
+        }
+    }
+
+    function spawnBrokenEgg(x) {
+        const brokenEgg = document.createElement('img');
+        brokenEgg.src = 'https://raw.githubusercontent.com/arshadasgar/arshadasgar.github.io/master/eggs/bullseye1.png';
+        brokenEgg.className = 'broken-egg';
+        brokenEgg.style.left = `${x - 20}px`;
+        brokenEgg.style.top = `${gameArea.offsetHeight - 40}px`;
+        gameArea.appendChild(brokenEgg);
+        setTimeout(() => gameArea.removeChild(brokenEgg), 1000);
+    }
+
+    function moveBasket(e) {
+        let newX = e.clientX - gameArea.getBoundingClientRect().left - (basket.offsetWidth / 2);
+        newX = Math.min(Math.max(newX, 0), gameArea.offsetWidth - basket.offsetWidth);
+        basket.style.left = `${newX}px`;
+    }
+
+    function checkCollision(egg) {
+        const basketRect = basket.getBoundingClientRect();
+        const eggRect = egg.getBoundingClientRect();
+        if (eggRect.bottom >= basketRect.top && 
+            eggRect.right > basketRect.left && 
+            eggRect.left < basketRect.right) {
+            gameArea.removeChild(egg);
+            updateScore();
+        }
+    }
+
+    function updateScore() {
+        score += 10;
+        document.getElementById('score').textContent = `Score: ${score}`;
+        gameSpeed += 0.1; // Increase speed slightly
+    }
+
+    function gameOver() {
+        isGameOver = true;
+        document.getElementById('restart').style.display = 'block';
+    }
+
+    gameArea.addEventListener('mousemove', moveBasket);
+    document.getElementById('restart').addEventListener('click', function() {
+        location.reload();
+    });
+
+    // Game loop
+    setInterval(spawnChicken, 2000);
+    gameArea.addEventListener('click', (e) => {
+        if (!isGameOver) spawnEgg(e.clientX - gameArea.getBoundingClientRect().left);
+    });
+    gameArea.addEventListener('transitionend', function(e) {
+        if (e.target.className === 'egg') checkCollision(e.target);
+    });
+</script>
+</body>
+</html>
