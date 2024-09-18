@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Zombie Shooter</title>
+<style>
+    canvas { background: #000; display: block; margin: 0 auto; }
+    #uiLayer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+    #score, #gameOver { font-family: Arial, sans-serif; color: white; text-align: center; pointer-events: auto; }
+    #gameOver { display: none; background: rgba(0, 0, 0, 0.8); padding: 20px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+</style>
+</head>
+<body>
+<div id="uiLayer">
+    <div id="score">Score: 0</div>
+    <div id="gameOver">
+        <h2>Game Over</h2>
+        <p>Zombies Killed: <span id="zombieCount">0</span></p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+</div>
+<canvas id="gameCanvas"></canvas>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 800;
+    canvas.height = 600;
+    
+    let score = 0;
+    let zombiesKilled = 0;
+    const player = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 20,
+        angle: 0,
+        weapon: {type: 'pistol', fireRate: 300, lastShot: 0}
+    };
+    
+    const zombies = [];
+    const bullets = [];
+    
+    function createZombie() {
+        zombies.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            speed: Math.random() * 2 + 0.5,
+            health: 100,
+            radius: 25
+        });
+    }
+    
+    function drawPlayer() {
+        ctx.save();
+        ctx.translate(player.x, player.y);
+        ctx.rotate(player.angle);
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(-10, -10, 20, 20);
+        ctx.fillStyle = 'grey';
+        ctx.fillRect(10, -3, 20, 6); // Gun
+        ctx.restore();
+    }
+    
+    function drawZombies() {
+        ctx.fillStyle = 'green';
+        zombies.forEach(zombie => {
+            ctx.beginPath();
+            ctx.arc(zombie.x, zombie.y, zombie.radius, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+    
+    function update() {
+        // Basic game logic here
+        zombies.forEach(zombie => {
+            const angle = Math.atan2(player.y - zombie.y, player.x - zombie.x);
+            zombie.x += Math.cos(angle) * zombie.speed;
+            zombie.y += Math.sin(angle) * zombie.speed;
+        });
+
+        // Bullet update and collision
+        bullets.forEach((bullet, index) => {
+            bullet.x += Math.cos(bullet.angle) * 10;
+            bullet.y += Math.sin(bullet.angle) * 10;
+            if(bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+                bullets.splice(index, 1);
+            } else {
+                zombies.forEach((zombie, zIndex) => {
+                    if(Math.hypot(zombie.x - bullet.x, zombie.y - bullet.y) < zombie.radius) {
+                        zombie.health -= 50; // damage from pistol
+                        if(zombie.health <= 0) {
+                            zombies.splice(zIndex, 1);
+                            score += 10;
+                            zombiesKilled++;
+                        }
+                        bullets.splice(index, 1);
+                        // Add visual effect for hit
+                        ctx.fillStyle = 'red';
+                        ctx.beginPath();
+                        ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+            }
+        });
+
+        // Increase difficulty
+        if(Math.random() < 0.01) createZombie();
+    }
+    
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawPlayer();
+        drawZombies();
+        // Draw bullets
+        ctx.fillStyle = 'red';
+        bullets.forEach(bullet => {
+            ctx.beginPath();
+            ctx.arc(bullet.x, bullet.y, 2, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+    
+    function gameLoop() {
+        update();
+        draw();
+        $('#score').text('Score: ' + score);
+        if(zombies.some(z => Math.hypot(z.x - player.x, z.y - player.y) < z.radius + player.radius)) {
+            gameOver();
+        } else {
+            requestAnimationFrame(gameLoop);
+        }
+    }
+
+    function gameOver() {
+        $('#gameOver').show();
+        $('#zombieCount').text(zombiesKilled);
+    }
+
+    function restartGame() {
+        zombies.length = 0;
+        bullets.length = 0;
+        score = 0;
+        zombiesKilled = 0;
+        $('#gameOver').hide();
+        gameLoop();
+    }
+
+    // Event listeners for controls
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const root = document.documentElement;
+        player.angle = Math.atan2(e.clientY - root.scrollTop - player.y, e.clientX - root.scrollLeft - player.x);
+    });
+
+    canvas.addEventListener('click', () => {
+        const time = new Date().getTime();
+        if(time > player.weapon.lastShot + player.weapon.fireRate) {
+            bullets.push({x: player.x, y: player.y, angle: player.angle});
+            player.weapon.lastShot = time;
+        }
+    });
+
+    // Start the game
+    gameLoop();
+});
+</script>
+</body>
+</html>

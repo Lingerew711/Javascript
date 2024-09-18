@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Zombie Shooter</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; }
+        #gameCanvas { background: url('background.jpg'); background-size: cover; }
+        #score, #gameOver { position: absolute; color: white; font-family: Arial; }
+        #score { top: 10px; left: 10px; }
+        #gameOver { top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="score">Score: 0</div>
+    <div id="gameOver">
+        <h1>Game Over</h1>
+        <p>Zombies Killed: <span id="finalScore">0</span></p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+    <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    // Game variables
+    let player, zombies = [], bullets = [], score = 0;
+    const keys = {};
+
+    // Player class
+    class Player {
+        constructor(x, y, radius, color) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.color = color;
+            this.weapon = { fireRate: 300, reloadTime: 1000 };
+            this.lastShot = 0;
+        }
+        draw() {
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // Rotate player towards mouse
+        update(mousePos) {
+            this.angle = Math.atan2(mousePos.y - this.y, mousePos.x - this.x);
+        }
+    }
+
+    // Zombie and other classes would follow similarly
+
+    // Game loop
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        updateGame();
+        drawGame();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function updateGame() {
+        // Update player, zombies, bullets
+        // Check collisions, update score, spawn new zombies, etc.
+        player.update({x: mouseX, y: mouseY});
+    }
+
+    function drawGame() {
+        player.draw();
+        // Draw zombies, bullets, score, etc.
+    }
+
+    function shoot() {
+        let now = Date.now();
+        if (now - player.lastShot > player.weapon.fireRate) {
+            // Create bullet logic
+            player.lastShot = now;
+        }
+    }
+
+    // Event listeners for keyboard and mouse
+    document.addEventListener('keydown', (e) => keys[e.code] = true);
+    document.addEventListener('keyup', (e) => keys[e.code] = false);
+    canvas.addEventListener('click', shoot);
+
+    // Initialize game
+    function init() {
+        player = new Player(canvas.width / 2, canvas.height / 2, 20, 'blue');
+        gameLoop();
+    }
+
+    function restartGame() {
+        // Reset game state
+        document.getElementById('gameOver').style.display = 'none';
+        init();
+    }
+
+    // Start game
+    init();
+    </script>
+</body>
+</html>
