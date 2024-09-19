@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Simple Tennis Game</title>
+<style>
+    body { 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        margin: 0; 
+        background: #f0f0f0; 
+    }
+    canvas { 
+        background: #fff; 
+        border: 2px solid #000; 
+    }
+    .game-controls {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    button {
+        padding: 10px 20px;
+        margin: 0 5px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+<div class="game-controls">
+    <button onclick="startGame()">Start</button>
+    <button onclick="restartGame()">Restart</button>
+</div>
+<canvas id="gameCanvas" width="800" height="400"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let gameRunning = false;
+let ball, leftPaddle, rightPaddle, score, speedIncreaseInterval;
+
+// Game objects
+function Ball() {
+    this.x = canvas.width / 2;
+    this.y = canvas.height / 2;
+    this.radius = 10;
+    this.speedX = 5;
+    this.speedY = 3;
+}
+
+function Paddle(x) {
+    this.x = x;
+    this.y = canvas.height / 2;
+    this.width = 10;
+    this.height = 100;
+    this.speed = 5;
+}
+
+function Spark(x, y) {
+    this.x = x;
+    this.y = y;
+    this.size = Math.random() * 3 + 1;
+    this.speedX = Math.random() * 4 - 2;
+    this.speedY = Math.random() * 4 - 2;
+    this.life = 30;
+}
+
+let sparks = [];
+
+// Game logic
+function resetGame() {
+    ball = new Ball();
+    leftPaddle = new Paddle(50);
+    rightPaddle = new Paddle(canvas.width - 60);
+    score = 0;
+    speedIncreaseInterval = 10;
+    gameRunning = false;
+}
+
+function update() {
+    if (!gameRunning) return;
+
+    // Move ball
+    ball.x += ball.speedX;
+    ball.y += ball.speedY;
+
+    // Ball collision with top and bottom
+    if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+        ball.speedY = -ball.speedY;
+    }
+
+    // Ball collision with paddles
+    if ((ball.x - ball.radius < leftPaddle.x + leftPaddle.width && 
+         ball.y > leftPaddle.y && ball.y < leftPaddle.y + leftPaddle.height) ||
+        (ball.x + ball.radius > rightPaddle.x && 
+         ball.y > rightPaddle.y && ball.y < rightPaddle.y + rightPaddle.height)) {
+        ball.speedX = -ball.speedX;
+        ball.speedX += (ball.speedX > 0 ? 0.5 : -0.5);
+        ball.speedY += Math.random() * 1 - 0.5; // Add some randomness to Y speed
+        score++;
+        if (score % speedIncreaseInterval === 0) {
+            ball.speedX *= 1.1;
+        }
+        // Create sparks at collision point
+        for(let i = 0; i < 5; i++) {
+            sparks.push(new Spark(ball.x, ball.y));
+        }
+    }
+
+    // Ball out of bounds
+    if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+        gameRunning = false;
+    }
+
+    // Move paddles
+    let paddle = ball.x < canvas.width / 2 ? leftPaddle : rightPaddle;
+    if (paddle.y + paddle.height/2 < mouse.y) {
+        paddle.y += paddle.speed;
+    } else if (paddle.y + paddle.height/2 > mouse.y) {
+        paddle.y -= paddle.speed;
+    }
+    paddle.y = Math.max(Math.min(paddle.y, canvas.height - paddle.height), 0);
+
+    // Update sparks
+    sparks.forEach((spark, index) => {
+        spark.x += spark.speedX;
+        spark.y += spark.speedY;
+        spark.life--;
+        if (spark.life <= 0) {
+            sparks.splice(index, 1);
+        }
+    });
+}
+
+function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw paddles
+    ctx.fillStyle = 'black';
+    ctx.fillRect(leftPaddle.x, leftPaddle.y, leftPaddle.width, leftPaddle.height);
+    ctx.fillRect(rightPaddle.x, rightPaddle.y, rightPaddle.width, rightPaddle.height);
+
+    // Draw ball
+    ctx.beginPath();
+    ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+    ctx.closePath();
+
+    // Draw sparks
+    ctx.fillStyle = 'orange';
+    sparks.forEach(spark => {
+        ctx.beginPath();
+        ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Draw score
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Score: ${score}`, 10, 30);
+}
+
+function gameLoop() {
+    update();
+    draw();
+    if (gameRunning) requestAnimationFrame(gameLoop);
+}
+
+function startGame() {
+    if (!gameRunning) {
+        gameRunning = true;
+        gameLoop();
+    }
+}
+
+function restartGame() {
+    resetGame();
+    startGame();
+}
+
+resetGame();
+
+// Mouse movement for paddle control
+let mouse = {x: 0, y: 0};
+canvas.addEventListener('mousemove', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    mouse.y = e.clientY - rect.top;
+});
+
+</script>
+</body>
+</html>

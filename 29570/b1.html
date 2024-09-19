@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Simple Tennis Game</title>
+<style>
+  body, html { margin: 0; padding: 0; overflow: hidden; }
+  canvas { display: block; background: #000; }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Game objects
+const paddleHeight = 10, paddleWidth = 100;
+let paddle1Y = 0, paddle2Y = canvas.height - paddleHeight;
+let paddleX = (canvas.width - paddleWidth) / 2;
+
+const ballRadius = 10;
+let ballX = canvas.width / 2, ballY = canvas.height / 2;
+let ballSpeedX = 5, ballSpeedY = 5;
+
+let score = 0;
+let speedIncreaseInterval = 5; // Increase speed every 5 points
+let speedMultiplier = 1;
+
+// Spark particles
+let sparks = [];
+
+function createSpark(x, y) {
+    for (let i = 0; i < 5; i++) {
+        sparks.push({
+            x: x,
+            y: y,
+            vx: Math.random() * 10 - 5,
+            vy: Math.random() * 10 - 5,
+            life: 30
+        });
+    }
+}
+
+function drawPaddle(x, y) {
+    ctx.fillStyle = 'white';
+    ctx.fillRect(x, y, paddleWidth, paddleHeight);
+}
+
+function drawBall(x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+    ctx.fillStyle = 'yellow';
+    ctx.fill();
+    ctx.closePath();
+}
+
+function drawSparks() {
+    for (let i = sparks.length - 1; i >= 0; i--) {
+        let s = sparks[i];
+        ctx.fillStyle = `rgba(255, 255, 0, ${s.life / 30})`;
+        ctx.fillRect(s.x, s.y, 2, 2);
+        s.x += s.vx;
+        s.y += s.vy;
+        s.life--;
+        if (s.life <= 0) sparks.splice(i, 1);
+    }
+}
+
+// Game loop
+function gameLoop() {
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Move ball
+    ballX += ballSpeedX * speedMultiplier;
+    ballY += ballSpeedY * speedMultiplier;
+
+    // Ball collision with top and bottom
+    if (ballY - ballRadius < 0 || ballY + ballRadius > canvas.height) {
+        if (ballY - ballRadius < 0) score++; // Score for bottom paddle
+        else score++; // Score for top paddle, assuming a point for either paddle
+        ballSpeedY = -ballSpeedY;
+        createSpark(ballX, ballY);
+    }
+
+    // Ball collision with paddles
+    if (
+        (ballY - ballRadius < paddleHeight && ballX > paddleX && ballX < paddleX + paddleWidth) ||
+        (ballY + ballRadius > canvas.height - paddleHeight && ballX > paddleX && ballX < paddleX + paddleWidth)
+    ) {
+        ballSpeedY = -ballSpeedY;
+        speedMultiplier += 0.05; // Increase difficulty
+        createSpark(ballX, ballY);
+    }
+
+    // Ball out of bounds (left or right)
+    if (ballX + ballRadius > canvas.width || ballX - ballRadius < 0) {
+        ballSpeedX = -ballSpeedX;
+    }
+
+    // Draw everything
+    drawPaddle(paddleX, paddle1Y);
+    drawPaddle(paddleX, paddle2Y);
+    drawBall(ballX, ballY);
+    drawSparks();
+    ctx.fillText('Score: ' + score, 10, 20);
+
+    requestAnimationFrame(gameLoop);
+}
+
+// Mouse movement for paddle
+canvas.addEventListener('mousemove', function(e) {
+    let relativeX = e.clientX - canvas.offsetLeft;
+    if(relativeX > 0 && relativeX < canvas.width) {
+        paddleX = relativeX - paddleWidth / 2;
+    }
+});
+
+// Start game
+gameLoop();
+</script>
+</body>
+</html>
