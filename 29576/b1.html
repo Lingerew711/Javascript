@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Maze Game</title>
+<style>
+    body {
+        background: #1a1a1a;
+        color: #f0f0f0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        overflow: hidden;
+    }
+    #game-container {
+        text-align: center;
+        max-width: 90vw;
+        max-height: 90vh;
+    }
+    #mazeCanvas {
+        border: 2px solid #444;
+        background: #333;
+    }
+    button, select {
+        margin: 10px;
+        padding: 10px;
+        background: #444;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    button:hover, select:hover {
+        background: #555;
+    }
+    @keyframes background-pan {
+        from { background-position: 0% center; }
+        to { background-position: -200% center; }
+    }
+    body {
+        animation: background-pan 10s linear infinite;
+        background: linear-gradient(
+            to right,
+            #ff416c, #ff4b2b, #ff416c
+        );
+        background-size: 200%;
+    }
+</style>
+</head>
+<body>
+<div id="game-container">
+    <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+        <option value="extreme">Extreme</option>
+    </select>
+    <button onclick="startGame()">Start/Restart</button>
+    <canvas id="mazeCanvas"></canvas>
+    <div id="message"></div>
+</div>
+
+<script>
+    const canvas = document.getElementById('mazeCanvas');
+    const ctx = canvas.getContext('2d');
+    const difficultySelect = document.getElementById('difficulty');
+    const messageDiv = document.getElementById('message');
+    let maze, player, endPoint, cellSize, rows, cols, moves = 0;
+
+    // Responsive canvas sizing
+    function resizeCanvas() {
+        canvas.width = window.innerWidth * 0.9;
+        canvas.height = window.innerHeight * 0.9;
+        if (maze) drawMaze();
+    }
+
+    window.addEventListener('resize', resizeCanvas, false);
+
+    function generateMaze() {
+        // Simplified maze generation logic (replace with actual algorithm)
+        rows = cols = {easy: 10, medium: 20, hard: 30, extreme: 50}[difficultySelect.value];
+        cellSize = Math.min(canvas.width / cols, canvas.height / rows);
+        maze = Array(rows).fill().map(() => Array(cols).fill(1)); // 1 for wall, 0 for path
+        // Here you would call your maze generation algorithm
+    }
+
+    function drawMaze() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+                if (maze[y][x] === 1) {
+                    ctx.fillStyle = '#444';
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+        // Draw player and endpoint
+        ctx.fillStyle = 'blue';
+        ctx.fillRect(player.x * cellSize, player.y * cellSize, cellSize, cellSize);
+        ctx.fillStyle = 'green';
+        ctx.fillRect(endPoint.x * cellSize, endPoint.y * cellSize, cellSize, cellSize);
+    }
+
+    function startGame() {
+        generateMaze();
+        player = {x: 0, y: 0};
+        endPoint = {x: cols - 1, y: rows - 1};
+        moves = 0;
+        resizeCanvas();
+        document.addEventListener('keydown', movePlayer);
+        canvas.addEventListener('touchstart', handleTouchStart, false);
+        canvas.addEventListener('touchmove', handleTouchMove, false);
+    }
+
+    function movePlayer(e) {
+        const key = e.key;
+        let newX = player.x, newY = player.y;
+        if (key === 'ArrowUp') newY--;
+        else if (key === 'ArrowDown') newY++;
+        else if (key === 'ArrowLeft') newX--;
+        else if (key === 'ArrowRight') newX++;
+        if (newX >= 0 && newY >= 0 && newX < cols && newY < rows && maze[newY][newX] === 0) {
+            player.x = newX;
+            player.y = newY;
+            moves++;
+            drawMaze();
+            checkWin();
+        }
+    }
+
+    // Touch movement would require additional logic for detecting swipe direction
+    function handleTouchStart(e) {
+        // Capture initial touch point
+    }
+
+    function handleTouchMove(e) {
+        // Determine direction of swipe and move player
+    }
+
+    function checkWin() {
+        if (player.x === endPoint.x && player.y === endPoint.y) {
+            messageDiv.textContent = `You won in ${moves} moves!`;
+            document.removeEventListener('keydown', movePlayer);
+            canvas.removeEventListener('touchstart', handleTouchStart);
+            canvas.removeEventListener('touchmove', handleTouchMove);
+        }
+    }
+
+    startGame();
+</script>
+</body>
+</html>

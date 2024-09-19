@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Maze Game</title>
+<style>
+body {
+    background: linear-gradient(45deg, #ff8a00, #e52e71, #8a2be2, #20b2aa);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+}
+
+@keyframes gradientBG {
+    0% {background-position: 0% 50%;}
+    50% {background-position: 100% 50%;}
+    100% {background-position: 0% 50%;}
+}
+
+#gameArea {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+canvas {
+    border: 1px solid white;
+    max-width: 100%;
+    height: auto;
+}
+
+button, select {
+    margin: 10px;
+    padding: 10px;
+    background: #000;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+button:hover, select:hover {
+    background: #333;
+}
+
+button:active, select:active {
+    background: #555;
+}
+</style>
+</head>
+<body>
+
+<div id="gameArea">
+    <h1>Maze Game</h1>
+    <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium">Medium</option>
+        <option value="hard">Hard</option>
+        <option value="extreme">Extreme</option>
+    </select>
+    <button onclick="startGame()">Start/Restart Game</button>
+    <div id="message"></div>
+    <canvas id="mazeCanvas"></canvas>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+const canvas = document.getElementById('mazeCanvas');
+const ctx = canvas.getContext('2d');
+const messageDiv = $("#message");
+let maze, player, end, moves = 0, cellSize;
+
+function startGame() {
+    const difficulty = document.getElementById('difficulty').value;
+    const sizes = {easy: 20, medium: 30, hard: 40, extreme: 50};
+    const size = sizes[difficulty];
+    cellSize = Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.8 / size);
+    canvas.width = canvas.height = cellSize * size;
+    maze = generateMaze(size, size);
+    player = {x: 0, y: 0};
+    end = {x: size - 1, y: size - 1};
+    moves = 0;
+    drawMaze();
+    messageDiv.text("Game Started! Navigate to the bottom right corner.");
+}
+
+function generateMaze(width, height) {
+    // Simplified maze generation logic for brevity
+    let grid = Array(height).fill().map(() => Array(width).fill(1));
+    // Here would go a full maze generation algorithm like recursive backtracking
+    // For now, we'll just clear a path
+    for(let y = 0; y < height; y++) {
+        for(let x = 0; x < width; x++) {
+            if(y % 2 === 1 || x % 2 === 1) grid[y][x] = 0;
+        }
+    }
+    return grid;
+}
+
+function drawMaze() {
+    for(let y = 0; y < maze.length; y++) {
+        for(let x = 0; x < maze[y].length; x++) {
+            ctx.fillStyle = maze[y][x] ? '#000' : '#fff';
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+    }
+    drawPlayer();
+    drawEnd();
+}
+
+function drawPlayer() {
+    ctx.fillStyle = 'blue';
+    ctx.beginPath();
+    ctx.arc(player.x * cellSize + cellSize / 2, player.y * cellSize + cellSize / 2, cellSize / 3, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawEnd() {
+    ctx.fillStyle = 'green';
+    ctx.fillRect(end.x * cellSize, end.y * cellSize, cellSize, cellSize);
+}
+
+function movePlayer(dx, dy) {
+    const newX = player.x + dx;
+    const newY = player.y + dy;
+    if(newX >= 0 && newY >= 0 && newX < maze[0].length && newY < maze.length && maze[newY][newX] === 0) {
+        player.x = newX;
+        player.y = newY;
+        moves++;
+        drawMaze();
+        if(player.x === end.x && player.y === end.y) {
+            messageDiv.text(`You Win! Moves: ${moves}`);
+        }
+    }
+}
+
+$(document).keydown(function(e) {
+    switch(e.key) {
+        case "ArrowUp": movePlayer(0, -1); break;
+        case "ArrowDown": movePlayer(0, 1); break;
+        case "ArrowLeft": movePlayer(-1, 0); break;
+        case "ArrowRight": movePlayer(1, 0); break;
+    }
+});
+
+// Touch controls would need additional implementation for mobile devices
+
+$(window).resize(startGame);
+startGame();
+</script>
+
+</body>
+</html>
