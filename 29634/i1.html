@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fitness App</title>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300&display=swap');
+
+:root {
+  --bg-color: #e0e0e0;
+  --start-color: #0ac;
+  --pause-color: #8ad4a4;
+  --reset-color: #d26258;
+  --loop-color: #efb834;
+  --timer-color: #f4f4f4;
+  --screen-color: #c7dfe6;
+  --shadow-screen-color: #b9d7e0;
+}
+
+* {
+  font-family: Montserrat, Sans-Serif;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+header h1 {
+    color: #333;
+    font-weight: 700;
+}
+
+section h2 {
+    font-size: 24px;
+    color: #555;
+    margin-bottom: 15px;
+}
+section{
+    margin-bottom: 10px;
+}
+#exerciseForm {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    max-width: 650px;
+}
+
+
+#exerciseForm input, #exerciseForm span {
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    flex-grow: 1;
+}
+
+#exerciseForm span {
+    padding: 10px 15px;
+    margin: 5px;
+    background-color: #0ac;
+    color: white;
+    cursor: pointer;
+    display: inline-block;
+    text-align: center;
+    border-radius: 5px;
+    flex-grow: 0; /* Prevents the span from taking up extra space */
+}
+
+#exerciseForm span:hover {
+    background-color: #088;
+}
+
+
+#exerciseListSection {
+    width: 100%;
+    max-width: 650px;
+    height: 200px; /* Fixed height for scrollability */
+    overflow-y: auto; /* Makes the list scrollable */
+    background-color: white;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.exerciseItem {
+    background-color: #e0e0e0;
+    padding: 10px;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+
+#exerciseInput{
+    width: 100%;
+    max-width: 650px;
+    height: 200px; /* Fixed height for scrollability */
+    overflow-y: auto; /* Makes the list scrollable */
+    background-color: white;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+  #wrap {
+  position: relative;
+  width: 646px;
+  height: 300px;
+  background: none;
+  margin: 0 auto 0  auto;
+  padding: 0;
+  transform-origin: 303px 204px;
+  transform: scale(80%);
+}
+#timerSection{
+    width: 100%;
+    max-width: 650px;
+    height: 500px; /* Fixed height for scrollability */
+    overflow-y: auto; /* Makes the list scrollable */
+    background-color: white;
+    padding: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+
+button {
+  margin: 0;
+  position: absolute;
+  top: 0;
+  font-size: 2rem;
+  cursor: pointer;
+  color: white;
+  border: 0px;
+  transition: all 0.2s ease;
+}
+
+button img {
+  position: relative;
+  top: -10px;
+}
+
+#start {
+  background-color: var(--start-color);
+  width: 148px;
+  height: 86px;
+  left: 0;
+  border-radius : 15px 15px 0px 0px;
+  -moz-border-radius : 15px 15px 0px 0px;
+  -webkit-border-radius : 15px 15px 0px 0px;
+}
+
+#pause {
+  background-color: var(--pause-color);
+  width: 148px;
+  height: 86px;
+  left: 148px;
+  border-radius : 15px 15px 0px 0px;
+  -moz-border-radius : 15px 15px 0px 0px;
+  -webkit-border-radius : 15px 15px 0px 0px;
+}
+
+#reset {
+  background-color: var(--reset-color);
+  width: 148px;
+  height: 86px;
+  left: 296px;
+  border-radius : 15px 15px 0px 0px;
+  -moz-border-radius : 15px 15px 0px 0px;
+  -webkit-border-radius : 15px 15px 0px 0px;
+  
+}
+
+@keyframes reset-anim {
+  50% {
+    top: 15px;
+  }
+  100% {
+    top: 0;
+  }
+}
+
+#loop {
+  position: absolute;
+  cursor: pointer;
+  top: 6px;
+  left: 465px;
+  transition: all 0.5s cubic-bezier(1, 0, 0, 1);
+  transform-origin: 85px 100px;
+}
+
+  .looped {
+    transform: rotate(90deg);
+  }
+
+
+#loop-div {
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  background-color: #444;
+  display: flex;
+  margin-left: 20px;
+}
+
+#timer-body {
+  background-color: var(--timer-color);
+  width: 646px;
+  height: 354px;
+  position: absolute;
+  left: 0;
+  top: 54px;
+  border-radius : 31px 176px 176px 31px;
+  -moz-border-radius : 31px 176px 176px 31px;
+  -webkit-border-radius : 31px 176px 176px 31px;
+}
+
+#timer-hole-light {
+  position: absolute;
+  background-color: white;
+  width: 309px;
+  height: 180px;
+  top: 145px;
+  left: 26px;
+}
+
+#screen {
+  box-sizing: border-box;
+  position: absolute;
+  width: 305px;
+  height: 172px;
+  top: 145px;
+  left: 30px;
+  padding: 20px;
+  background-color: var(--shadow-screen-color);
+}
+
+#screen-light {
+  position: absolute;
+  background-color: var(--screen-color);
+  width: 297px;
+  height: 162px;
+  top: 10px;
+  left: 0px;
+}
+
+
+
+#circle {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  top: 120px;
+  left: 370px;
+  color: white;
+  border-radius: 50%;
+  
+  width: 220px;
+  height: 220px;
+  background-color: var(--start-color);
+  animation: pulse 0.5s cubic-bezier(1,0,0,1) alternate  infinite;
+  animation-play-state: paused;
+  animation-fill-mode: backwards;
+}
+
+
+
+@keyframes pulse{
+  100% {
+    opacity: 50%;
+  }
+}
+
+#name {
+  position: relative;
+  left: 0;
+  margin: auto 1em auto 0;
+  font-size: 2.4rem;
+  text-align: left;
+  color: #383838;
+}
+
+#time {
+  font-size: 8rem;
+  position: relative;
+  
+  display: block;
+  text-align: center;
+  
+}
+
+#next {
+  position: relative;
+  font-size: 1.4rem;
+  left: 4px;
+  text-align: left;
+  color: #383838;
+}
+
+@media only screen and (orientation: portrait){
+  #wrap {
+    transform: rotate(-90deg) scale(60%);
+  }
+}
+#name, #next, #nextes {
+    font-style: italic;  
+    color: #888;       
+}
+</style>
+</head>
+<body>
+<header>
+    <h1>Fitness Tracker</h1>
+</header>
+
+<section id="exerciseInput">
+    <h2>Add New Exercise</h2>
+    <form id="exerciseForm">
+        <input type="text" id="exerciseName" placeholder="Exercise Name" required>
+        <input type="number" id="exerciseDuration" placeholder="Duration (s)" min="1" required>
+        <input type="number" id="restDuration" placeholder="Rest Duration (s)" min="1" required>
+        <input type="number" id="repetitionCount" placeholder="Repetitions" min="1" required >
+        <span id="addExercise" onclick="addExercise()">Add Exercise</span>
+    </form>
+</section>
+
+<section id="exerciseListSection">
+    <h2>Exercise List</h2>
+    <div id="exerciseList"></div>
+</section>
+<section id="timerSection">
+    <h2>Workout Timer</h2>
+<div id=wrap>
+
+
+  
+  <button id="start" onclick="startTimer(ex[numex][0], sec)"><img src="https://res.cloudinary.com/ruwett/image/upload/v1661189038/Timer/play-icon_rgtkbf.png" alt="Start"/> </button>
+    <button id="pause" onclick="pauseTimer()"><img src="https://res.cloudinary.com/ruwett/image/upload/v1661189038/Timer/pause-icon_mntpll.png" alt="Pause"/></button>
+    <button id="reset" onclick="resetTimer()"><img src="https://res.cloudinary.com/ruwett/image/upload/v1661189038/Timer/reset-icon_znemse.png" alt="Reset"/> </button>
+    <div id="loop" onclick="toggleLoop()">
+    <img src="https://res.cloudinary.com/ruwett/image/upload/v1661189038/Timer/loop-lever_urcgjj.png" alt="Loop Toggle"/>
+</div>
+
+  
+  
+  <div id="timer-body"></div>
+  <div id="timer-hole-light"></div>
+  <div id="screen">
+    <div id="screen-light"></div>
+    <div id="name">Exercise</div>
+    <div id="next">Next: <span id="nextes"></span></div>
+  </div>
+  <div id="circle"><p id="time"></p></div>
+</div>
+</section>
+<script>
+var ex = [];
+var sec = 0;
+var numex = 0;
+var isRest = false;
+var isPaused = false;
+var shouldLoop = false;
+var ding = new Audio('https://res.cloudinary.com/ruwett/video/upload/v1661189199/Timer/reception-bell-14620_jl73p4.mp3');
+
+function addExercise() {
+    var name = document.getElementById("exerciseName").value;
+    var duration = parseInt(document.getElementById("exerciseDuration").value, 10);
+    var rest = parseInt(document.getElementById("restDuration").value, 10);
+    var repetitions = parseInt(document.getElementById("repetitionCount").value, 10);
+
+    if (!isNaN(duration) && !isNaN(rest) && !isNaN(repetitions) && name !== "") {
+        ex.push([name, duration, rest, repetitions]);
+        document.getElementById("exerciseForm").reset();
+        updateExerciseList();
+        updateDisplay();
+    } else {
+        alert("Please fill all fields correctly and ensure all numbers are valid.");
+    }
+}
+
+
+
+
+function updateExerciseList() {
+    var list = document.getElementById("exerciseList");
+    list.innerHTML = '';
+    ex.forEach(function(item, index) {
+        var div = document.createElement('div');
+        div.className = 'exerciseItem';
+        div.textContent = `${index + 1}. ${item[0]}: Duration- ${item[1]}s, Rest - ${item[2]}s, Repetitions - ${item[3]} times`;
+        list.appendChild(div);
+    });
+}
+
+
+
+function startTimer(name, tim){
+  sec = tim; // Make sure the initial seconds are set correctly
+    document.getElementById("time").innerHTML = String(sec);
+  
+  isPaused = false;
+  document.getElementById("name").innerHTML = name;
+ if (shouldLoop) {
+        document.getElementById("nextes").innerHTML = (numex + 1 < ex.length) ? ex[numex + 1][0] : ex[0][0];
+    } else {
+        document.getElementById("nextes").innerHTML = (numex + 1 < ex.length) ? ex[numex + 1][0] : '';
+    }
+  
+  var timer = setInterval(function(){
+    
+    if(isPaused == true) {
+      clearInterval(timer);
+      }
+    
+    if(sec > 0 && isPaused != true) {
+      
+      sec--;
+       document.getElementById("time").innerHTML = String(sec);
+      
+    } else if (sec<=0 && isPaused != true){
+      
+      clearInterval(timer);
+      //isPaused = true;
+      
+      
+      if(numex+1 < ex.length) {
+        ding.play();
+        if(isRest == false){
+          ding.play();
+          sec = ex[numex][2];
+          isRest = !isRest;
+          startTimer("Rest", sec);
+        } else {
+          ding.play();
+          numex = (numex < ex.length && isRest == true) ? numex + 1 : numex;
+          console.log(numex);
+          sec = ex[numex][1];
+          isRest = !isRest;
+          startTimer(ex[numex][0], sec);
+        }
+        
+      }
+      
+      else if (numex+1 == ex.length && shouldLoop) {
+        ding.play();
+        if(isRest == false){
+          sec = ex[numex][2];
+          isRest = !isRest;
+          startTimer("Rest", sec);
+        } else {
+          numex = 0;
+          sec = ex[0][1];
+          isRest = !isRest;
+          startTimer(ex[numex][0], sec);
+        } 
+      } else {
+        ding.play();
+        resetTimer();
+      } 
+      
+    }
+  },1000);
+}
+
+
+
+function resetTimer() {
+    clearInterval(window.activeTimer);
+    numex = 0;
+    if (ex.length > 0) {
+        sec = ex[0][1]; // Reset to the duration of the first exercise
+        document.getElementById("time").innerHTML = sec; // Update display to show reset time
+    }
+    isRest = false;
+    isPaused = false;
+    document.getElementById("name").innerHTML = ex.length > 0 ? ex[0][0] : "No Exercise";
+    document.getElementById("nextes").innerHTML = ex.length > 1 ? ex[1][0] : 'No Next Exercise';
+    document.getElementById("circle").style.backgroundColor = '#0ac';
+    document.getElementById("circle").style.animationPlayState = 'paused'; // Ensure animation is not suggesting paused
+}
+
+
+
+
+
+document.getElementById("pause").addEventListener("click", function () {
+    this.style.top = "15px";
+    document.getElementById("start").style.top = "0";
+    isPaused = true;
+    circle.style.animationName = 'pulse';
+    circle.style.animationPlayState = 'running';
+    circle.style.backgroundColor = '#acc';
+});
+
+function toggleLoop() {
+    var loopButton = document.getElementById("loop");
+    loopButton.classList.toggle("looped");
+    shouldLoop = !shouldLoop; // Toggles the global loop state
+    console.log("Looping is now " + (shouldLoop ? "enabled" : "disabled") + ".");
+}
+
+
+
+
+// Define pauseTimer function if it's not already defined
+function pauseTimer() {
+    isPaused = true;
+    document.getElementById("pause").style.top = "15px";
+    var circle = document.getElementById("circle");
+    circle.style.animationPlayState = 'running'; // Show animation as "paused"
+    circle.style.backgroundColor = '#acc';
+}
+
+
+
+
+
+
+
+// Assuming `startTimer` is called from somewhere like the start button's onclick event
+document.getElementById("start").addEventListener("click", function() {
+    this.style.top = "15px";
+    if (ex.length > 0 && !isPaused) {
+        numex = 0;  // Reset to the first exercise
+        startTimer(ex[numex][0], ex[numex][1]);  // Pass the exercise duration
+    }
+});
+
+document.getElementById("reset").addEventListener("click", function() {
+    this.style.top = "15px";
+    resetTimer();
+});
+
+
+
+function updateDisplay() {
+    if (ex.length > 0) {
+        document.getElementById("name").innerHTML = ex[0][0];  // Current exercise name
+        document.getElementById("time").innerHTML = ex[0][1];  // Current exercise time
+        document.getElementById("nextes").innerHTML = ex.length > 1 ? ex[1][0] : 'None';  // Next exercise name
+    } else {
+        // Set defaults when no exercises are present
+        document.getElementById("name").innerHTML = "Exercise";
+        document.getElementById("time").innerHTML = "0";
+        document.getElementById("nextes").innerHTML = "None";
+    }
+}
+
+// Ensure this function is called to set the initial display
+updateDisplay();
+
+
+</script>
+</body>
+</html>
+
+

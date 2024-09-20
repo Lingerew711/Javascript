@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fitness Timer App</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<style>
+    body { font-family: 'Arial', sans-serif; background: #f4f4f9; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: auto; }
+    form { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    input, button { padding: 10px; margin: 5px 0; width: calc(100% - 22px); border: 1px solid #ddd; border-radius: 4px; }
+    button { background-color: #5cb85c; color: white; border: none; cursor: pointer; }
+    button:hover { opacity: 0.8; }
+    .exercise-list { max-height: 300px; overflow-y: auto; }
+    .exercise-card, .timer-card { background: white; margin: 10px 0; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .timer-controls button { width: 40px; height: 40px; margin: 5px; }
+    .current-exercise, .next-exercise { margin-top: 10px; }
+    .icon { font-size: 1.5em; }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <form id="exerciseForm">
+        <input type="text" id="exerciseName" placeholder="Exercise Name" required>
+        <input type="number" id="duration" placeholder="Duration (sec)" min="1" required>
+        <input type="number" id="rest" placeholder="Rest (sec)" min="0" required>
+        <input type="number" id="repetitions" placeholder="Repetitions" min="1" required>
+        <button type="submit"><i class="fas fa-plus icon"></i></button>
+    </form>
+
+    <div class="exercise-list" id="exerciseList"></div>
+
+    <div class="timer-card">
+        <div id="timerDisplay">00:00</div>
+        <div class="timer-controls">
+            <button id="startTimer"><i class="fas fa-play icon"></i></button>
+            <button id="pauseTimer"><i class="fas fa-pause icon"></i></button>
+            <button id="resetTimer"><i class="fas fa-redo icon"></i></button>
+            <label><input type="checkbox" id="loopToggle"> Loop</label>
+        </div>
+        <div class="current-exercise">Current: <span id="currentExercise"></span></div>
+        <div class="next-exercise">Next: <span id="nextExercise"></span></div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    let exercises = [];
+    let currentExerciseIndex = 0;
+    let timer;
+    let isRunning = false;
+    let timeLeft;
+    let isRest = false;
+    let currentRepetition = 1;
+
+    $("#exerciseForm").submit(function(e) {
+        e.preventDefault();
+        let exercise = {
+            name: $("#exerciseName").val(),
+            duration: parseInt($("#duration").val()),
+            rest: parseInt($("#rest").val()),
+            repetitions: parseInt($("#repetitions").val())
+        };
+        exercises.push(exercise);
+        updateExerciseList();
+        $("#exerciseForm")[0].reset();
+    });
+
+    function updateExerciseList() {
+        $("#exerciseList").empty();
+        exercises.forEach((ex, index) => {
+            let card = $(`<div class="exercise-card">
+                <div>${ex.name} - ${ex.duration}s x ${ex.repetitions} (Rest: ${ex.rest}s)</div>
+            </div>`);
+            if (index === currentExerciseIndex) card.css('border', '2px solid #5cb85c');
+            $("#exerciseList").append(card);
+        });
+        updateCurrentNextDisplay();
+    }
+
+    function updateCurrentNextDisplay() {
+        $("#currentExercise").text(currentExerciseIndex < exercises.length ? exercises[currentExerciseIndex].name : 'None');
+        $("#nextExercise").text(currentExerciseIndex + 1 < exercises.length ? exercises[currentExerciseIndex + 1].name : 'None');
+    }
+
+    function startTimer() {
+        if (!isRunning) {
+            isRunning = true;
+            timer = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    if (isRest) {
+                        isRest = false;
+                        if (exercises[currentExerciseIndex].repetitions > currentRepetition) {
+                            currentRepetition++;
+                            timeLeft = exercises[currentExerciseIndex].duration;
+                        } else {
+                            moveToNextExercise();
+                        }
+                    } else {
+                        isRest = true;
+                        timeLeft = exercises[currentExerciseIndex].rest;
+                    }
+                    updateTimerDisplay();
+                    if ($("#loopToggle").prop('checked')) {
+                        if (!isRest && currentRepetition < exercises[currentExerciseIndex].repetitions) {
+                            timeLeft = exercises[currentExerciseIndex].rest;
+                        }
+                    }
+                }
+            }, 1000);
+        }
+    }
+
+    function pauseTimer() {
+        clearInterval(timer);
+        isRunning = false;
+    }
+
+    function resetTimer() {
+        pauseTimer();
+        timeLeft = exercises[currentExerciseIndex].duration;
+        currentRepetition = 1;
+        updateTimerDisplay();
+    }
+
+    function moveToNextExercise() {
+        currentRepetition = 1;
+        currentExerciseIndex++;
+        if (currentExerciseIndex >= exercises.length) {
+            pauseTimer();
+            alert('Workout Complete!');
+            return;
+        }
+        timeLeft = exercises[currentExerciseIndex].duration;
+        updateExerciseList();
+    }
+
+    function updateTimerDisplay() {
+        let display = `${Math.floor(timeLeft / 60).toString().padStart(2, '0')}:${(timeLeft % 60).toString().padStart(2, '0')}`;
+        $("#timerDisplay").text(isRest ? `Rest: ${display}` : display);
+    }
+
+    $("#startTimer").on('click', startTimer);
+    $("#pauseTimer").on('click', pauseTimer);
+    $("#resetTimer").on('click', resetTimer);
+});
+</script>
+
+</body>
+</html>

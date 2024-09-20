@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet">
+    <style>
+        .exercise-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .card {
+            margin: 10px 0;
+        }
+        .timer-card {
+            background-color: #f8f9fa;
+            border: 1px solid #e7e7e7;
+        }
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">Fitness Tracker</h2>
+        <form id="exerciseForm" class="mb-3">
+            <div class="form-row">
+                <div class="col"><input type="text" class="form-control" placeholder="Exercise Name" id="name"></div>
+                <div class="col"><input type="number" class="form-control" placeholder="Duration (s)" id="duration"></div>
+                <div class="col"><input type="number" class="form-control" placeholder="Rest (s)" id="rest"></div>
+                <div class="col"><input type="number" class="form-control" placeholder="Repetitions" id="repetition"></div>
+                <div class="col"><button type="submit" class="btn btn-primary">Add</button></div>
+            </div>
+        </form>
+        <div class="exercise-list">
+            <div id="exercises"></div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card timer-card">
+                    <div class="card-body" id="currentExercise"></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card timer-card">
+                    <div class="card-body" id="nextExercise"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        let exercises = [];
+        let currentExerciseIndex = 0;
+        let timer;
+        let isRest = false;
+        let loopCount = 0;
+
+        $("#exerciseForm").on('submit', function(e) {
+            e.preventDefault();
+            const exercise = {
+                name: $("#name").val(),
+                duration: parseInt($("#duration").val()),
+                rest: parseInt($("#rest").val()),
+                repetition: parseInt($("#repetition").val())
+            };
+            exercises.push(exercise);
+            updateExerciseList();
+            $("#exerciseForm")[0].reset();
+        });
+
+        function updateExerciseList() {
+            $("#exercises").html(exercises.map((ex, index) => `
+                <div class="card mb-2">
+                    <div class="card-body">
+                        ${ex.name} - ${ex.duration}s - Rest: ${ex.rest}s - x${ex.repetition}
+                        <button class="icon-btn start-timer" data-index="${index}"><i class="fas fa-play"></i></button>
+                    </div>
+                </div>
+            `).join(''));
+        }
+
+        function startTimer() {
+            const current = exercises[currentExerciseIndex];
+            let timeLeft = isRest ? current.rest : current.duration;
+            let label = isRest ? 'Rest' : current.name;
+
+            function tick() {
+                if (timeLeft > 0) {
+                    $("#currentExercise").html(`<h5>${label}</h5><p>${timeLeft}s</p>`);
+                    timeLeft--;
+                    timer = setTimeout(tick, 1000);
+                } else {
+                    if (isRest) {
+                        loopCount--;
+                        if (loopCount > 0) {
+                            isRest = false;
+                            startTimer();
+                        } else if (currentExerciseIndex < exercises.length - 1) {
+                            currentExerciseIndex++;
+                            loopCount = exercises[currentExerciseIndex].repetition;
+                            isRest = false;
+                            startTimer();
+                        } else {
+                            $("#currentExercise").html(`<h5>Finished</h5>`);
+                        }
+                    } else {
+                        isRest = true;
+                        startTimer();
+                    }
+                }
+            }
+
+            tick();
+            updateNextExercise();
+        }
+
+        function updateNextExercise() {
+            if (currentExerciseIndex + 1 < exercises.length) {
+                const next = exercises[currentExerciseIndex + 1];
+                $("#nextExercise").html(`<h5>Next: ${next.name}</h5>`);
+            } else {
+                $("#nextExercise").html('<h5>Next: None</h5>');
+            }
+        }
+
+        $(document).on('click', '.start-timer', function() {
+            currentExerciseIndex = parseInt($(this).data('index'));
+            loopCount = exercises[currentExerciseIndex].repetition;
+            startTimer();
+        });
+    });
+    </script>
+</body>
+</html>
