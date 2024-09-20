@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Penalty Kick Game</title>
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #f0f0f0;
+}
+
+#gameField {
+    width: 100vw;
+    height: 100vh;
+    background: url('https://contentservice.mc.reyrey.net/image_v1.0.0/?id=26107e19-02ae-5a04-bc21-88b57bc22ced&638600304193604811') no-repeat center center;
+    background-size: cover;
+    position: relative;
+    cursor: none;
+}
+
+#ball {
+    width: 50px;
+    height: 50px;
+    background: url('https://upload.wikimedia.org/wikipedia/en/e/ec/Soccer_ball.svg') no-repeat;
+    background-size: cover;
+    position: absolute;
+    bottom: 50px;
+    left: calc(50% - 25px);
+    transition: transform 0.5s ease-out;
+}
+
+#goalkeeper {
+    width: 100px;
+    height: 150px;
+    background: url('https://contentservice.mc.reyrey.net/image_v1.0.0/?id=f4278541-20df-568f-baea-e387ee22937c&638600307412335028') no-repeat;
+    background-size: cover;
+    position: absolute;
+    bottom: 150px;
+    left: calc(50% - 50px);
+    transition: all 0.3s;
+}
+
+#result {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3em;
+    color: white;
+    text-shadow: 2px 2px 4px #000000;
+    display: none;
+}
+</style>
+</head>
+<body>
+<div id="gameField">
+    <div id="ball"></div>
+    <div id="goalkeeper"></div>
+    <div id="result"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ball = document.getElementById('ball');
+    const goalkeeper = document.getElementById('goalkeeper');
+    const result = document.getElementById('result');
+    const field = document.getElementById('gameField');
+    let isKicked = false;
+
+    // Goalkeeper positions
+    const gkPositions = {
+        'low-left': '4d2c276a-53d1-5d61-973a-43e438e4d242',
+        'high-left': '50c68e89-78aa-5583-b9fb-a6b7088a2795',
+        'high-center': 'c82054e5-0c08-5936-8b3a-da9c3803a430',
+        'high-right': '72578b00-ecdb-5e3d-824e-cdd981720b04',
+        'low-right': '9effa62d-7e3d-5638-9ea2-a02ab3508dfc'
+    };
+
+    // Shaking effect for goalkeeper
+    function shakeGoalkeeper() {
+        goalkeeper.style.transform = 'translateX(' + (Math.random() * 10 - 5) + 'px)';
+        if (!isKicked) requestAnimationFrame(shakeGoalkeeper);
+    }
+    shakeGoalkeeper();
+
+    field.addEventListener('click', (e) => {
+        if (isKicked) return;
+        isKicked = true;
+
+        // Ball movement
+        const targetX = e.clientX;
+        const targetY = e.clientY;
+        const ballRect = ball.getBoundingClientRect();
+        const moveX = targetX - ballRect.left - ballRect.width / 2;
+        const moveY = targetY - ballRect.top - ballRect.height / 2;
+
+        ball.style.transform = `translate(${moveX}px, ${moveY}px)`;
+
+        // Determine where the ball is going
+        const goalWidth = field.offsetWidth / 3;
+        const ballEndX = ballRect.left + moveX;
+        const ballEndY = ballRect.top + moveY;
+        let gkPositionKey;
+
+        if (ballEndY < field.offsetHeight / 2) {
+            if (ballEndX < goalWidth) gkPositionKey = 'high-left';
+            else if (ballEndX > field.offsetWidth - goalWidth) gkPositionKey = 'high-right';
+            else gkPositionKey = 'high-center';
+        } else {
+            if (ballEndX < goalWidth) gkPositionKey = 'low-left';
+            else if (ballEndX > field.offsetWidth - goalWidth) gkPositionKey = 'low-right';
+            else gkPositionKey = 'high-center'; // Assuming center for simplicity
+        }
+
+        // Update goalkeeper image
+        const gkImageId = gkPositions[gkPositionKey];
+        goalkeeper.style.backgroundImage = `url('https://contentservice.mc.reyrey.net/image_v1.0.0/?id=${gkImageId}&638600308')`;
+
+        // Check if goal or not
+        setTimeout(() => {
+            if (Math.random() > 0.5) { // Simple 50% chance for demonstration
+                result.textContent = 'Goal!';
+            } else {
+                result.textContent = 'Fail!';
+            }
+            result.style.display = 'block';
+            setTimeout(() => {
+                result.style.display = 'none';
+                resetGame();
+            }, 2000);
+        }, 500);
+    });
+
+    function resetGame() {
+        ball.style.transform = '';
+        goalkeeper.style.backgroundImage = `url('https://contentservice.mc.reyrey.net/image_v1.0.0/?id=f4278541-20df-568f-baea-e387ee22937c&638600307412335028')`;
+        isKicked = false;
+        shakeGoalkeeper(); // Restart the shake effect
+    }
+});
+</script>
+</body>
+</html>

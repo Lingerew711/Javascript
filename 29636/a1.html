@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Penalty Kick Game</title>
+<style>
+    #game-area {
+        width: 800px;
+        height: 400px;
+        background: url('https://contentservice.mc.reyrey.net/image_v1.0.0/?id=26107e19-02ae-5a04-bc21-88b57bc22ced&638600304193604811') no-repeat center;
+        background-size: cover;
+        position: relative;
+        cursor: crosshair;
+    }
+    #ball {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        left: 385px;
+        bottom: 20px;
+        background: url('https://upload.wikimedia.org/wikipedia/en/e/ec/Soccer_ball.svg') no-repeat;
+        background-size: contain;
+    }
+    #goalkeeper {
+        position: absolute;
+        width: 100px;
+        height: 150px;
+        bottom: 30px;
+        left: 350px;
+        background-image: url('path_to_initial_goalkeeper_image');
+        transition: all 0.3s;
+    }
+    #message {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 40px;
+        color: white;
+        display: none;
+    }
+    @keyframes shake {
+        0% { transform: translate(1px, 1px) rotate(0deg); }
+        10% { transform: translate(-1px, -2px) rotate(-1deg); }
+        // ... (more keyframes for realistic shaking)
+    }
+</style>
+</head>
+<body>
+<div id="game-area">
+    <div id="ball"></div>
+    <div id="goalkeeper"></div>
+    <div id="message"></div>
+</div>
+
+<script>
+document.getElementById('game-area').addEventListener('click', function(e) {
+    const rect = this.getBoundingClientRect();
+    const x = e.clientX - rect.left; //x position within the element.
+    const y = e.clientY - rect.top;  //y position within the element.
+    
+    // Ball movement logic here
+    // Goalkeeper reaction logic here
+    
+    // Example of ball movement
+    document.getElementById('ball').style.transition = 'all 2s ease-out';
+    document.getElementById('ball').style.left = x + 'px';
+    document.getElementById('ball').style.bottom = (rect.height - y) + 'px';
+    
+    // Outcome logic (simplified)
+    setTimeout(() => {
+        if (/* logic to determine if it's a goal or not */) {
+            document.getElementById('message').innerText = 'Goal!';
+        } else {
+            document.getElementById('message').innerText = 'Fail!';
+        }
+        document.getElementById('message').style.display = 'block';
+    }, 2000);
+    
+    // Reset message after some time
+    setTimeout(() => {
+        document.getElementById('message').style.display = 'none';
+    }, 5000);
+});
+
+// Goalkeeper initial shake
+let goalkeeper = document.getElementById('goalkeeper');
+goalkeeper.style.animation = 'shake 0.5s infinite';
+
+// Stop shaking when game starts (you'll need to implement this part when the ball is clicked)
+</script>
+</body>
+</html>
