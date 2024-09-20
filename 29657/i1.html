@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Page Title</title>
+<style>
+
+a {
+  display: inline-block;
+  padding: 10px 20px;
+  margin: 10px 5px;
+  background-color: #007BFF; /* Primary button color */
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16); /* Subtle shadow for depth */
+  transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transitions for interactive effects */
+}
+
+a:hover, a:focus {
+  background-color: #0056b3; /* Darker shade on hover/focus */
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2); /* Larger shadow on hover for a 'lifting' effect */
+  color: #ffffff;
+  text-decoration: none;
+}
+
+ul{
+  display:block;
+  width:500px;
+  height:500px;
+  list-style:none;
+  
+  transform:translateZ(0);
+}
+
+li{
+  position:relative;
+  
+  display:block;
+  float:left;
+  
+  background:rgba(60,60,60,1);
+  
+  width:50px;
+  height:50px;
+  
+  border-radius:100%;
+    
+  overflow:hidden;
+}
+
+li:before{
+  position:absolute;
+  content:'';
+  
+  width:50px;
+  height:50px;
+  
+  top:22px;
+  left:22px;
+  border:5px solid white;
+  width:inherit;
+  height:inherit;
+  border-radius:40%;
+  
+  box-sizing:border-box;
+}
+
+[data-state='1'], [data-state='2'], [data-state='3'], [data-state='4'], li{
+    animation:turn .5s forwards;
+}
+[data-state='2']{
+    animation-name:turn1;
+}
+[data-state='3']{
+    animation-name:turn2;
+}
+[data-state='4']{
+    animation-name:turn3;
+}
+li{
+    animation-name:turn3;
+}
+
+@keyframes turn{
+  0%{
+    transform:rotate(0deg);
+  }
+  100%{
+    transform:rotate(90deg);
+  }
+}
+@keyframes turn1{
+  0%{
+    transform:rotate(90deg);
+  }
+  100%{
+    transform:rotate(180deg);
+  }
+}
+@keyframes turn2{
+  0%{
+    transform:rotate(180deg);
+  }
+  100%{
+    transform:rotate(270deg);
+  }
+}
+@keyframes turn3{
+  0%{
+    transform:rotate(270deg);
+  }
+  100%{
+    transform:rotate(360deg);
+  }
+}
+
+/* Boring */
+body{
+  font-family:"Helvetica Neue", sans-serif;
+}
+h1, p{
+  text-align:center;
+}
+h1{
+  font-size:2em;
+}
+.center{
+  margin:0 auto;
+  width:600px;
+}
+.right{
+  float:right;
+}
+
+footer{
+  font-size:.8em;
+}
+</style>
+</head>
+<body>
+<h1>Little Game</h1>
+<p>Click on a circle to rotate it; connect the pipes and watch everything move.</p>
+<div class="center">
+  <ul id="board"></ul>
+  <div><span>Points: </span><span id="point"></span></div>
+  <a id="fast" href="#">Fast mode</a>
+  <a id="normal" href="#">Normal mode</a>
+  
+  
+</div>
+<script>
+var game = {
+  points : 0,
+  delay  : 510,
+  init : function(node, point, tweet, w, h){
+    this.map = new Array(w*h);
+    
+    this.node = node;
+    this.point = point;
+    this.tweet = tweet;
+    
+    this.w = w;
+    this.h = h;
+    
+    
+    this.node.addEventListener('click', function(e){
+      var element = e.srcElement || e.target;
+      game.points = 0;
+      game.turn(element.dataPos, true);
+    }, true); 
+       
+    this._initNode(); 
+  },
+    
+  turn : function(pos, start){   
+    var item = this.map[pos];
+    
+    if (start === true){
+       game.chain(pos, item)
+     }else{
+      setTimeout(function(){
+        game.chain(pos, item);
+      }, game.delay); // This have to be in sync with the turn animation .5s
+     }
+  },
+  
+  chain : function(pos, item){
+    if (item.animationRunning) return; // Only do thing when it's not currently animating. 
+                                       // Fixing bugs where strange things can happen
+    
+    var state = item.state, 
+        nextItem, 
+        nextPos, 
+        allowed;
+    
+    state = ( item.state + 1 ) % 4;
+    
+    if (state === 0 || state === 1){
+      this.startNext(pos+game.w, [2, 3])
+    }
+    if (state === 0 || state === 3){
+      this.startNext(pos+1, [1,2])
+    }
+    if (state === 1 || state === 2){
+      this.startNext(pos-1, [0,3])
+    }
+    if (state === 2 || state === 3){
+      this.startNext(pos-game.w, [0,1])
+    }
+    
+    item.state = state;
+    item.animationRunning = true;
+    item.li.setAttribute('data-state', state);
+    
+    // Just want to make this working. 
+    // here i should use the animationend event! 
+    setTimeout(function(){item.animationRunning = false;}, 500)
+      
+    game.addPoints();
+  },
+  
+  startNext : function(nextPos, allowed){
+    var nextItem = game.map[nextPos];    
+    if (nextItem !== undefined && allowed.indexOf(nextItem.state) !== -1){
+      game.turn(nextPos);
+    }
+  },
+  
+  addPoints : function(){ 
+    game.points++;
+    game.point.innerHTML = game.points;
+  },
+  
+  _initNode : function(){
+    var frag = document.createDocumentFragment(),
+        b = 0, map = this.map;
+    for (var i=0;i<map.length;i++){
+      var state = Math.floor(Math.random()*4),
+          li   = document.createElement('li'); 
+      
+          li.setAttribute('data-state', state);
+          li.dataPos = i;
+      
+      map[i] = {state : state, li : li};
+      frag.appendChild(li);
+    }
+    this.node.innerHTML = "";
+    this.node.appendChild(frag);
+  }
+}
+
+var board = document.getElementById('board'),
+    point =  document.getElementById('point'),
+    tweet =  document.getElementById('tweet');
+game.init(board, point, tweet, 10, 10);
+
+
+
+var fast =  document.getElementById('fast');
+fast.addEventListener('click', function(e){
+  game.delay = 0;
+  e.preventDefault();
+});
+var normal = document.getElementById('normal');
+normal.addEventListener('click', function(e){
+  game.delay = 510;
+  e.preventDefault();
+});
+</script>
+</body>
+</html>
+
+

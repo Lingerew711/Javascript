@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pipe Connection Game</title>
+<style>
+  #game-area {
+    width: 500px;
+    height: 500px;
+    border: 2px solid #000;
+    position: relative;
+  }
+  .pipe {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .pipe-inner {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-area"></div>
+<button onclick="startGame('normal')">Normal Mode</button>
+<button onclick="startGame('fast')">Fast Mode</</button>
+
+<script>
+const gameArea = document.getElementById('game-area');
+let pipes = [];
+let mode = 'normal';
+let score = 0;
+
+function Pipe(x, y) {
+    this.x = x;
+    this.y = y;
+    this.rotation = Math.floor(Math.random() * 4) * 90; // 0, 90, 180, 270
+    this.element = document.createElement('div');
+    this.element.className = 'pipe';
+    this.element.innerHTML = '<div class="pipe-inner"></div>';
+    this.element.style.left = `${x}px`;
+    this.element.style.top = `${y}px`;
+    this.element.onclick = () => rotatePipe(this);
+    gameArea.appendChild(this.element);
+}
+
+function rotatePipe(pipe) {
+    pipe.rotation = (pipe.rotation + 90) % 360;
+    pipe.element.style.transform = `rotate(${pipe.rotation}deg)`;
+    checkConnections();
+}
+
+function checkConnections() {
+    // Logic to check if pipes connect from start to end
+    // This would involve checking adjacent pipes for alignment
+    // For simplicity, this function is left as a placeholder
+    score += 10; // Example scoring
+}
+
+function startGame(selectedMode) {
+    mode = selectedMode;
+    score = 0;
+    gameArea.innerHTML = ''; // Clear previous game
+    for (let i = 0; i < 10; i++) {
+        for (let j = 0; j < 10; j++) {
+            pipes.push(new Pipe(j * 50, i * 50));
+        }
+    }
+    // Here you would also set the game's speed based on mode
+}
+
+// Initial game start
+startGame('normal');
+</script>
+
+</body>
+</html>
