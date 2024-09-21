@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Archery Game</title>
+<style>
+    body { 
+        background: #f0f0f0; 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        height: 100vh; 
+        margin: 0; 
+        font-family: 'Arial', sans-serif;
+    }
+    canvas { 
+        background: #fff; 
+        border: 2px solid #000; 
+    }
+    #gameInfo {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+        border-radius: 5px;
+    }
+    .timer {
+        width: 100px;
+        height: 10px;
+        background: green;
+        transition: width 5s linear;
+    }
+    .timer.red {
+        background: red;
+    }
+    .score-popup {
+        position: absolute;
+        font-size: 24px;
+        color: gold;
+        text-shadow: 2px 2px black;
+        animation: pop 1s forwards;
+    }
+    @keyframes pop {
+        to { transform: translateY(-50px); opacity: 0; }
+    }
+</style>
+</head>
+<body>
+<div id="gameInfo">
+    <div>Arrows: <span id="arrowsCount"></span></div>
+    <div>Score: <span id="score">0</span></div>
+    <div class="timer" id="timer"></div>
+</div>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const arrowsCount = document.getElementById('arrowsCount');
+const scoreDisplay = document.getElementById('score');
+const timerBar = document.getElementById('timer');
+
+let arrows = 10;
+let score = 0;
+let targetSpeed = 0.5;
+let bowSpeed = 1;
+let gameOver = false;
+let bestScore = 0;
+let autoFireTimeout = 5000;
+let currentTimeout;
+
+const target = {
+    x: 700, y: 300, radius: 50, speed: targetSpeed
+};
+
+const bow = {
+    x: 50, y: 300, speed: bowSpeed
+};
+
+const arrow = {
+    x: 0, y: 0, fired: false, speed: 10
+};
+
+function drawTarget() {
+    for(let i = 8; i > 0; i--) {
+        ctx.beginPath();
+        ctx.arc(target.x, target.y, target.radius * i / 8, 0, Math.PI * 2);
+        ctx.fillStyle = i % 2 === 0 ? 'red' : 'white';
+        ctx.fill();
+        ctx.stroke();
+    }
+}
+
+function drawBow() {
+    ctx.beginPath();
+    ctx.moveTo(bow.x, bow.y);
+    ctx.lineTo(bow.x + 30, bow.y);
+    ctx.strokeStyle = 'brown';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+}
+
+function drawArrow() {
+    if(arrow.fired) {
+        ctx.beginPath();
+        ctx.moveTo(arrow.x, arrow.y);
+        ctx.lineTo(arrow.x + 20, arrow.y);
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+}
+
+function moveBow() {
+    bow.y += bow.speed;
+    if(bow.y <= 0 || bow.y >= canvas.height) bow.speed *= -1;
+}
+
+function moveTarget() {
+    target.x += target.speed;
+    if(target.x - target.radius <= 0 || target.x + target.radius >= canvas.width) target.speed *= -1;
+}
+
+function fireArrow() {
+    if(!arrow.fired && !gameOver) {
+        arrow.x = bow.x + 30;
+        arrow.y = bow.y;
+        arrow.fired = true;
+        arrows--;
+        arrowsCount.textContent = arrows;
+        resetTimer();
+    }
+}
+
+function updateArrow() {
+    if(arrow.fired) {
+        arrow.x += arrow.speed;
+        if(arrow.x > canvas.width) {
+            arrow.fired = false;
+        }
+        checkCollision();
+    }
+}
+
+function checkCollision() {
+    const distance = Math.hypot(arrow.x - target.x, arrow.y - target.y);
+    if(distance < target.radius) {
+        let points = 8 - Math.floor(distance / (target.radius / 8));
+        if(points > 0) {
+            score += points;
+            if(points >= 7) {
+                arrows++;
+                showScorePopup(points, true);
+            } else {
+                showScorePopup(points);
+            }
+            targetSpeed += 0.1;
+            bowSpeed += 0.05;
+        }
+        scoreDisplay.textContent = score;
+        arrowsCount.textContent = arrows;
+        arrow.fired = false;
+    }
+}
+
+function showScorePopup(points, bonusArrow = false) {
+    const popup = document.createElement('div');
+    popup.className = 'score-popup';
+    popup.textContent = `+${points}${bonusArrow ? ' ➕' : ''}`;
+    popup.style.left = `${arrow.x}px`;
+    popup.style.top = `${arrow.y}px`;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 1000);
+}
+
+function resetTimer() {
+    clearTimeout(currentTimeout);
+    timerBar.style.width = '100px';
+    timerBar.classList.remove('red');
+    currentTimeout = setTimeout(() => {
+        timerBar.style.width = '0px';
+        timerBar.classList.add('red');
+        if(!arrow.fired) fireArrow();
+    }, autoFireTimeout);
+}
+
+function gameLoop() {
+    if(arrows > 0 && !gameOver) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawTarget();
+        moveTarget();
+        drawBow();
+        moveBow();
+        drawArrow();
+        updateArrow();
+        requestAnimationFrame(gameLoop);
+    } else {
+        gameOver = true;
+        if(score > bestScore) bestScore = score;
+        alert(`Game Over! Your score: ${score}. Best score: ${bestScore}`);
+        restartGame();
+    }
+}
+
+function restartGame() {
+    arrows = 10;
+    score = 0;
+    targetSpeed = 0.5;
+    bowSpeed = 1;
+    gameOver = false;
+    arrowsCount.textContent = arrows;
+    scoreDisplay.textContent = score;
+    gameLoop();
+}
+
+canvas.addEventListener('click', fireArrow);
+resetTimer();
+gameLoop();
+</script>
+</body>
+</html>

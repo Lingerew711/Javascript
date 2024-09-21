@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Archery Game</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+<style>
+    /* CSS for game UI, animations, and layout */
+    #gameCanvas { 
+        background: url('background.jpg') no-repeat center center; 
+        background-size: cover;
+    }
+    .target, .archer, .arrow { position: absolute; }
+    .score-splash {
+        position: absolute; 
+        opacity: 0; 
+        transition: opacity 0.5s;
+    }
+    /* Additional styles for UI elements */
+</style>
+</head>
+<body>
+<div id="gameCanvas" class="container-fluid">
+    <div id="archer"></div>
+    <div id="target"></div>
+    <div id="scoreDisplay"></div>
+    <div id="arrowsLeft"></div>
+    <div id="timerBar"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+<script>
+// JavaScript/p5.js code for game logic
+let archer, target, arrows = [], arrowCount = 10, score = 0;
+let timer = 0, maxTime = 3000; // Time in ms before auto-fire
+
+function setup() {
+    createCanvas(800, 600);
+    archer = new Archer(width / 2, height - 50);
+    target = new Target(width / 2, 100);
+}
+
+function draw() {
+    background(220);
+    archer.show();
+    target.show();
+    
+    // Update and show arrows
+    for (let arrow of arrows) {
+        arrow.show();
+        arrow.move();
+        checkHit(arrow);
+    }
+    
+    // Timer for auto-fire
+    updateTimer();
+}
+
+function mouseClicked() {
+    if (arrowCount > 0) {
+        arrows.push(new Arrow(archer.x, archer.y));
+        arrowCount--;
+    }
+}
+
+function updateTimer() {
+    timer += deltaTime;
+    if (timer >= maxTime) {
+        mouseClicked();
+        timer = 0;
+    }
+    // Update UI for timerBar
+}
+
+function checkHit(arrow) {
+    if (dist(arrow.x, arrow.y, target.x, target.y) < target.size / 2) {
+        let hitScore = 8 - Math.floor(dist(arrow.x, arrow.y, target.x, target.y) / (target.size / 16));
+        score += hitScore;
+        if (hitScore >= 7) arrowCount++; // Bonus arrow
+        showScoreSplash(hitScore);
+        target.hit(); // Increase target speed
+        arrows.splice(arrows.indexOf(arrow), 1);
+    }
+}
+
+function showScoreSplash(score) {
+    // Animation for score display
+    let splash = document.createElement('div');
+    splash.className = 'score-splash';
+    splash.innerText = '+' + score + (score >= 7 ? ' +1 arrow' : '');
+    // Position and style dynamically
+    document.body.appendChild(splash);
+    setTimeout(() => splash.style.opacity = '1', 10);
+    setTimeout(() => document.body.removeChild(splash), 500);
+}
+
+
+// Classes for Archer, Target, Arrow would be defined here with methods for move, show, etc.
+
+// Game loop, UI updates, and event listeners would continue here
+</script>
+</body>
+</html>
