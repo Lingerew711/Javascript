@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Card Racing Game</title>
+<style>
+    canvas {
+        border: 1px solid black;
+        background: #808080; /* Road color */
+    }
+    #controls {
+        margin-top: 10px;
+    }
+    button {
+        padding: 10px;
+        margin: 5px;
+    }
+    #status {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 5px;
+    }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<div id="controls">
+    <button id="gas">Gas</button>
+    <button id="brake">Brake</button>
+    <button id="left">Left</button>
+    <button id="right">Right</button>
+</div>
+<div id="status"></div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const statusDiv = document.getElementById('status');
+
+// Game objects and properties
+const playerCar = {x: canvas.width / 2 - 25, y: canvas.height - 100, width: 50, height: 100, speed: 0, color: 'blue'};
+let cars = [];
+let obstacles = [];
+let coins = [];
+let marks = [];
+let frameCount = 0;
+let carsAhead = 0;
+let distanceToNextCar = 'Far';
+
+// Game constants
+const CAR_SPEED = 0.5;
+const MAX_SPEED = 10;
+const MIN_SPEED = -2;
+const OBSTACLE_SPEED = 2;
+const COIN_SPEED = 3;
+
+// Initialize game
+function init() {
+    for(let i = 0; i < 5; i++) {
+        spawnCar();
+    }
+    for(let i = 0; i < 3; i++) {
+        spawnObstacle();
+        spawnCoin();
+    }
+}
+
+// Spawn functions
+function spawnCar() {
+    const car = {
+        x: Math.random() * (canvas.width - 50),
+        y: -100,
+        width: 50,
+        height: 100,
+        speed: Math.random() * 2 + 1,
+        color: `hsl(${Math.random() * 360}, 100%, 50%)`
+    };
+    cars.push(car);
+}
+
+function spawnObstacle() {
+    obstacles.push({
+        x: Math.random() * canvas.width,
+        y: -50,
+        width: 30,
+        height: 30
+    });
+}
+
+function spawnCoin() {
+    coins.push({
+        x: Math.random() * canvas.width,
+        y: -30,
+        radius: 10
+    });
+}
+
+// Game loop
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw road
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawRoadLines();
+
+    // Update and draw cars
+    updatePlayerCar();
+    updateCars();
+
+    // Draw obstacles and coins
+    drawAndMove(obstacles, 'black', 'rect');
+    drawAndMove(coins, 'gold', 'circle');
+
+    // Check collisions
+    checkCollisions();
+
+    // Draw tire marks
+    drawTireMarks();
+
+    // Update status
+    updateStatus();
+
+    // Spawn new objects
+    if(frameCount % 200 === 0) spawnCar();
+    if(frameCount % 300 === 0) {
+        spawnObstacle();
+        spawnCoin();
+    }
+
+    frameCount++;
+    requestAnimationFrame(gameLoop);
+}
+
+// Draw functions
+function drawRoadLines() {
+    ctx.strokeStyle = 'white';
+    ctx.setLineDash([40, 20]);
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, 0);
+    ctx.lineTo(canvas.width / 2, canvas.height);
+    ctx.stroke();
+}
+
+function drawAndMove(items, color, type) {
+    for(let item of items) {
+        ctx.fillStyle = color;
+        if(type === 'rect') {
+            ctx.fillRect(item.x, item.y, item.width, item.height);
+        } else if(type === 'circle') {
+            ctx.beginPath();
+            ctx.arc(item.x, item.y, item.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        item.y += item.speed || OBSTACLE_SPEED;
+        if(item.y > canvas.height) items.splice(items.indexOf(item), 1);
+    }
+}
+
+function drawTireMarks() {
+    for(let mark of marks) {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(mark.x, mark.y, 2, 20);
+        mark.y += 2;
+        if(mark.y > canvas.height) marks.splice(marks.indexOf(mark), 1);
+    }
+}
+
+// Update functions
+function updatePlayerCar() {
+    ctx.fillStyle = playerCar.color;
+    ctx.fillRect(playerCar.x, playerCar.y, playerCar.width, playerCar.height);
+}
+
+function updateCars() {
+    carsAhead = cars.filter(car => car.y < playerCar.y).length;
+    let nearestCar = cars.reduce((prev, curr) => 
+        (Math.abs(curr.y - playerCar.y) < Math.abs(prev.y - playerCar.y) && curr.y > playerCar.y) ? curr : prev, {y: Infinity});
+    distanceToNextCar = nearestCar.y === Infinity ? 'Far' : Math.abs(nearestCar.y - playerCar.y) < 50 ? 'Close' : 'Moderate';
+    
+    for(let car of cars) {
+        ctx.fillStyle = car.color;
+        ctx.fillRect(car.x, car.y, car.width, car.height);
+        car.y += car.speed;
+        if(car.y > canvas.height) cars.splice(cars.indexOf(car), 1);
+    }
+}
+
+function checkCollisions() {
+    // Simplified collision check for demonstration
+    for(let obstacle of obstacles) {
+        if(playerCar.y < obstacle.y + obstacle.height &&
+           playerCar.y + playerCar.height > obstacle.y &&
+           playerCar.x < obstacle.x + obstacle.width &&
+           playerCar.x + playerCar.width > obstacle.x) {
+            playerCar.speed = Math.max(playerCar.speed - 1, MIN_SPEED);
+            marks.push({x: obstacle.x, y: obstacle.y});
+        }
+    }
+
+    for(let coin of coins) {
+        if(Math.hypot(playerCar.x + playerCar.width/2 - coin.x, playerCar.y + playerCar.height/2 - coin.y) < coin.radius + playerCar.width/2) {
+            playerCar.speed = Math.min(playerCar.speed + 1, MAX_SPEED);
+            coins.splice(coins.indexOf(coin), 1);
+        }
+    }
+}
+
+function updateStatus() {
+    statusDiv.innerHTML = `Speed: ${'='.repeat(Math.floor(playerCar.speed))} <br>
+                           Cars Ahead: ${carsAhead} <br>
+                           Distance to Next Car: ${distanceToNextCar}`;
+}
+
+// Controls
+document.addEventListener('keydown', function(e) {
+    switch(e.key) {
+        case 'ArrowUp': playerCar.speed = Math.min(playerCar.speed + CAR_SPEED, MAX_SPEED); break;
+        case 'ArrowDown': playerCar.speed = Math.max(playerCar.speed - CAR_SPEED, MIN_SPEED); break;
+        case 'ArrowLeft': playerCar.x = Math.max(0, playerCar.x - 5); break;
+        case 'ArrowRight': playerCar.x = Math.min(canvas.width - playerCar.width, playerCar.x + 5); break;
+    }
+});
+
+document.getElementById('gas').onclick = () => playerCar.speed = Math.min(playerCar.speed + CAR_SPEED, MAX_SPEED);
+document.getElementById('brake').onclick = () => playerCar.speed = Math.max(playerCar.speed - CAR_SPEED, MIN_SPEED);
+document.getElementById('left').onclick = () => playerCar.x = Math.max(0, playerCar.x - 5);
+document.getElementById('right').onclick = () => playerCar.x = Math.min(canvas.width - playerCar.width, playerCar.x + 5);
+
+// Start game
+init();
+gameLoop();
+</script>
+</body>
+</html>
