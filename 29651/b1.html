@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Piano</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+        font-family: Arial, sans-serif;
+    }
+    .piano {
+        display: flex;
+        position: relative;
+    }
+    .key {
+        height: 200px;
+        width: 40px;
+        border: 1px solid #000;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        padding-bottom: 10px;
+        background: white;
+        border-radius: 0 0 5px 5px;
+        cursor: pointer;
+    }
+    .key.black {
+        height: 120px;
+        width: 30px;
+        background: black;
+        color: white;
+        margin: 0 -15px;
+        z-index: 2;
+    }
+    .key span {
+        display: none;
+        position: absolute;
+        top: -25px;
+    }
+    .key:hover span {
+        display: block;
+    }
+    #noteDisplay {
+        position: absolute;
+        top: -50px;
+        font-size: 1.5em;
+    }
+</style>
+</head>
+<body>
+<div class="piano">
+    <div class="key" data-note="C" data-key="65"><span>A</span></div>
+    <div class="key black" data-note="C#" data-key="87"><span>W</span></div>
+    <div class="key" data-note="D" data-key="83"><span>S</span></div>
+    <div class="key black" data-note="D#" data-key="69"><span>E</span></div>
+    <div class="key" data-note="E" data-key="68"><span>D</span></div>
+    <div class="key" data-note="F" data-key="70"><span>F</span></div>
+    <div class="key black" data-note="F#" data-key="84"><span>T</span></div>
+    <div class="key" data-note="G" data-key="71"><span>G</span></div>
+    <div class="key black" data-note="G#" data-key="89"><span>Y</span></div>
+    <div class="key" data-note="A" data-key="72"><span>H</span></div>
+    <div class="key black" data-note="A#" data-key="85"><span>U</span></div>
+    <div class="key" data-note="B" data-key="74"><span>J</span></div>
+    <div class="key" data-note="C" data-key="75"><span>K</span></div>
+    <div class="key black" data-note="C#" data-key="79"><span>O</span></div>
+    <div class="key" data-note="D" data-key="76"><span>L</span></div>
+    <div class="key black" data-note="D#" data-key="80"><span>P</span></div>
+    <div class="key" data-note="E" data-key="186"><span>;</span></div>
+    <div id="noteDisplay"></div>
+</div>
+
+<script>
+document.addEventListener('keydown', function(e) {
+    if (e.repeat) return;
+    const audio = document.querySelector(`audio[data-key="${e.keyCode}"]`);
+    const key = document.querySelector(`.key[data-key="${e.keyCode}"]`);
+    if (!audio) return;
+    audio.currentTime = 0;
+    audio.play();
+    document.getElementById('noteDisplay').textContent = key.getAttribute('data-note');
+});
+
+document.addEventListener('keyup', function(e) {
+    const key = document.querySelector(`.key[data-key="${e.keyCode}"]`);
+    if (key) key.classList.remove('active');
+});
+
+const keys = document.querySelectorAll('.key');
+keys.forEach(key => {
+    key.addEventListener('click', function() {
+        const note = this.getAttribute('data-note');
+        const keyCode = this.getAttribute('data-key');
+        const audio = document.querySelector(`audio[data-key="${keyCode}"]`);
+        if (audio) {
+            audio.currentTime = 0;
+            audio.play();
+            document.getElementById('noteDisplay').textContent = note;
+        }
+    });
+});
+
+const sounds = {
+    '65': '040.wav', '87': '041.wav', '83': '042.wav', '69': '043.wav', '68': '044.wav',
+    '70': '045.wav', '84': '046.wav', '71': '047.wav', '89': '048.wav', '72': '049.wav',
+    '85': '050.wav', '74': '051.wav', '75': '052.wav', '79': '053.wav', '76': '054.wav',
+    '80': '055.wav', '186': '056.wav'
+};
+
+for (let key in sounds) {
+    const audioElement = document.createElement('audio');
+    audioElement.src = `http://carolinegabriel.com/demo/js-keyboard/sounds/${sounds[key]}`;
+    audioElement.setAttribute('data-key', key);
+    document.body.appendChild(audioElement);
+}
+</script>
+</body>
+</html>

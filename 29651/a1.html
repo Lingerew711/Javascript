@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Virtual Piano</title>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+    #piano {
+        display: flex;
+        position: relative;
+    }
+    .key {
+        height: 200px;
+        width: 40px;
+        border: 1px solid #000;
+        background: white;
+        box-shadow: 2px 2px 2px rgba(0,0,0,0.1);
+        position: relative;
+    }
+    .key.black {
+        height: 120px;
+        width: 30px;
+        background: black;
+        margin: 0 -15px;
+        z-index: 10;
+        border-bottom-left-radius: 5px;
+        border-bottom-right-radius: 5px;
+    }
+    .key span {
+        position: absolute;
+        bottom: 10px;
+        width: 100%;
+        text-align: center;
+        color: #555;
+        display: none;
+    }
+    .key:hover span {
+        display: block;
+    }
+    .key.black span {
+        color: white;
+    }
+    #noteDisplay {
+        position: absolute;
+        top: -50px;
+        width: 100%;
+        text-align: center;
+        font-size: 24px;
+    }
+</style>
+</head>
+<body>
+
+<div id="piano">
+    <div id="noteDisplay">Press a key</div>
+    <!-- White keys -->
+    <div class="key" data-note="C"><span>A</span></div>
+    <div class="key" data-note="D"><span>S</span></div>
+    <div class="key" data-note="E"><span>D</span></div>
+    <div class="key" data-note="F"><span>F</span></div>
+    <div class="key" data-note="G"><span>G</span></div>
+    <div class="key" data-note="A"><span>H</span></div>
+    <div class="key" data-note="B"><span>J</span></div>
+    <!-- Black keys -->
+    <div class="key black" data-note="C#"><span>W</span></div>
+    <div class="key black" data-note="D#"><span>E</span></div>
+    <div class="key black" data-note="F#"><span>T</span></div>
+    <div class="key black" data-note="G#"><span>Y</span></div>
+    <div class="key black" data-note="A#"><span>U</span></div>
+    <!-- Continue with higher octave if needed -->
+</div>
+
+<script>
+    const keys = document.querySelectorAll('.key');
+    const noteDisplay = document.getElementById('noteDisplay');
+    
+    const playSound = (url) => {
+        let audio = new Audio(url);
+        audio.play();
+    };
+
+    const notes = {
+        'A': '040.wav', 'W': '041.wav', 'S': '042.wav', 'E': '043.wav', 'D': '044.wav',
+        'F': '045.wav', 'T': '046.wav', 'G': '047.wav', 'Y': '048.wav', 'H': '049.wav',
+        'U': '050.wav', 'J': '051.wav', 'K': '052.wav', 'O': '053.wav', 'L': '054.wav',
+        'P': '055.wav', ';': '056.wav'
+    };
+
+    document.addEventListener('keydown', function(event) {
+        if (event.repeat) return;
+        const key = event.key.toUpperCase();
+        if (notes[key]) {
+            const soundUrl = `http://carolinegabriel.com/demo/js-keyboard/sounds/${notes[key]}`;
+            playSound(soundUrl);
+            noteDisplay.textContent = document.querySelector(`[data-note="${document.querySelector(`[data-note*="${key}"]`).dataset.note}"]`).dataset.note;
+        }
+    });
+
+    keys.forEach(key => {
+        key.addEventListener('click', function() {
+            const note = this.getAttribute('data-note');
+            const keyCode = note.replace('#', 's').replace('C', 'A').replace('D', 'S').replace('E', 'D').replace('F', 'F').replace('G', 'G').replace('A', 'H').replace('B', 'J');
+            const soundUrl = `http://carolinegabriel.com/demo/js-keyboard/sounds/${notes[keyCode]}`;
+            playSound(soundUrl);
+            noteDisplay.textContent = note;
+        });
+    });
+</script>
+
+</body>
+</html>
