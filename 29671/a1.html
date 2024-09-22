@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Painting App</title>
+<style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background: #f0f0f0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
+    #drawingContainer {
+        background: white;
+        border: 2px solid #333;
+        margin-top: 20px;
+    }
+    #colorPicker, #drawingSelector {
+        margin: 10px 0;
+        padding: 10px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+    }
+    .color-option, .drawing-option {
+        cursor: pointer;
+        margin: 5px;
+        padding: 5px;
+        display: inline-block;
+        border: 2px solid transparent;
+    }
+    .color-option {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+    }
+    .color-option:hover, .drawing-option:hover {
+        border-color: #000;
+    }
+    .selected {
+        border-color: #000;
+    }
+</style>
+</head>
+<body>
+
+<div id="controls">
+    <div id="colorPicker">
+        <div class="color-option" style="background-color: #FF0000;"></div>
+        <div class="color-option" style="background-color: #00FF00;"></div>
+        <div class="color-option" style="background-color: #0000FF;"></div>
+        <div class="color-option" style="background-color: #FFFF00;"></div>
+        <div class="color-option" style="background-color: #FF00FF;"></div>
+        <div class="color-option" style="background-color: #00FFFF;"></div>
+    </div>
+
+    <div id="drawingSelector"></div>
+</div>
+
+<div id="drawingContainer"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const drawings = [
+        "harper-coloring-book001.svg", "harper-coloring-book002.svg", /* ... rest of the URLs ... */
+    ];
+    
+    const container = document.getElementById('drawingContainer');
+    const colorPicker = document.getElementById('colorPicker');
+    const drawingSelector = document.getElementById('drawingSelector');
+    let currentColor = '#FF0000';
+    let currentDrawing;
+
+    // Setup color picker
+    colorPicker.addEventListener('click', function(e) {
+        if(e.target.classList.contains('color-option')) {
+            document.querySelector('.color-option.selected')?.classList.remove('selected');
+            e.target.classList.add('selected');
+            currentColor = window.getComputedStyle(e.target).backgroundColor;
+        }
+    });
+
+    // Setup drawing selector
+    drawings.forEach(drawing => {
+        let img = document.createElement('img');
+        img.src = `https://s3-us-west-2.amazonaws.com/s.cdpn.io/183091/${drawing}`;
+        img.alt = drawing;
+        img.classList.add('drawing-option');
+        img.addEventListener('click', function() {
+            loadDrawing(this.src);
+            document.querySelector('.drawing-option.selected')?.classList.remove('selected');
+            this.classList.add('selected');
+        });
+        drawingSelector.appendChild(img);
+    });
+
+    // Function to load drawing
+    function loadDrawing(src) {
+        fetch(src)
+            .then(response => response.text())
+            .then(svgText => {
+                container.innerHTML = svgText;
+                currentDrawing = container.querySelector('svg');
+                currentDrawing.style.width = '100%';
+                currentDrawing.style.height = 'auto';
+                
+                currentDrawing.addEventListener('click', function(e) {
+                    if(e.target.tagName === 'path' || e.target.tagName === 'rect' || e.target.tagName === 'circle' || e.target.tagName === 'polygon') {
+                        e.target.style.fill = currentColor;
+                    }
+                });
+            });
+    }
+
+    // Initial load
+    loadDrawing(`https://s3-us-west-2.amazonaws.com/s.cdpn.io/183091/${drawings[0]}`);
+});
+</script>
+
+</body>
+</html>

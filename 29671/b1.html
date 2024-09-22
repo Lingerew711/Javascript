@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Painting App</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f4f4f4;
+            padding: 20px;
+        }
+        .drawing-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .drawing-item {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            background: white;
+            cursor: pointer;
+        }
+        .color-picker {
+            margin-top: 20px;
+            text-align: center;
+        }
+        #canvas {
+            border: 1px solid black;
+            background: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="text-center">Choose Your Drawing</h2>
+    <div id="drawings" class="drawing-container"></div>
+    <div class="color-picker">
+        <input type="color" id="colorPicker" value="#ff0000">
+        <button onclick="resetColor()">Reset Color</button>
+    </div>
+    <canvas id="canvas" width="800" height="600"></canvas>
+</div>
+
+<script>
+    const drawings = [
+        // List your SVG URLs here
+        "https://s3-us-west-2.amazonaws.com/s.cdpn.io/183091/harper-coloring-book001.svg",
+        // ... (all other URLs)
+    ];
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let currentDrawing = null;
+    let currentColor = '#ff0000';
+
+    function loadDrawing(url) {
+        const img = new Image();
+        img.onload = function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            currentDrawing = img;
+        };
+        img.src = url;
+    }
+
+    function setupDrawings() {
+        const drawingDiv = document.getElementById('drawings');
+        drawings.forEach(draw => {
+            const div = document.createElement('div');
+            div.className = 'drawing-item';
+            div.onclick = () => loadDrawing(draw);
+            const img = document.createElement('img');
+            img.src = draw;
+            img.style.maxWidth = '100px';
+            div.appendChild(img);
+            drawingDiv.appendChild(div);
+        });
+    }
+
+    canvas.onclick = function(event) {
+        const rect = canvas.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        ctx.fillStyle = currentColor;
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+    };
+
+    document.getElementById('colorPicker').onchange = function() {
+        currentColor = this.value;
+    };
+
+    function resetColor() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (currentDrawing) ctx.drawImage(currentDrawing, 0, 0, canvas.width, canvas.height);
+    }
+
+    setupDrawings();
+</script>
+
+</body>
+</html>
