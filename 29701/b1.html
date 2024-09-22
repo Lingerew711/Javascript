@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hangman Game</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background-color: #f0f0f0;
+        }
+        #game-container {
+            text-align: center;
+        }
+        #wordSpotlight {
+            font-size: 2em;
+            margin: 20px 0;
+            letter-spacing: 10px;
+        }
+        #alphabet {
+            margin: 10px auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 300px;
+        }
+        .letter {
+            padding: 5px 10px;
+            margin: 5px;
+            border: 1px solid #000;
+            cursor: pointer;
+            background: #fff;
+        }
+        .letter:hover {
+            background: #ddd;
+        }
+        .letter.deactivated {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        #hangmanDraw {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+        }
+        .part {
+            background: #000;
+            position: absolute;
+        }
+        /* Drawing parts would be styled here */
+    </style>
+</head>
+<body>
+<div id="game-container">
+    <h1>Hangman</h1>
+    <div id="wordSpotlight">_ _ _ _ _</div>
+    <div id="alphabet"></div>
+    <div id="hangmanDraw"></div>
+    <button onclick="resetGame()" style="display:none;">Restart Game</button>
+</div>
+
+<script>
+    const words = ['JAVASCRIPT', 'HANGMAN', 'COMPUTER', 'ALGORITHM', 'DEVELOPER'];
+    let selectedWord = '';
+    let guessedWord = [];
+    let mistakes = 0;
+    const maxMistakes = 6;
+
+    function setupGame() {
+        selectedWord = words[Math.floor(Math.random() * words.length)];
+        guessedWord = Array(selectedWord.length).fill('_');
+        document.getElementById('wordSpotlight').textContent = guessedWord.join(' ');
+        setupAlphabet();
+        drawGallows();
+    }
+
+    function setupAlphabet() {
+        const alphabetDiv = document.getElementById('alphabet');
+        for (let i = 65; i <= 90; i++) {
+            let letter = String.fromCharCode(i);
+            let button = document.createElement('div');
+            button.className = 'letter';
+            button.textContent = letter;
+            button.onclick = function() { guess(letter); };
+            alphabetDiv.appendChild(button);
+        }
+    }
+
+    function guess(letter) {
+        if (selectedWord.includes(letter)) {
+            for (let i = 0; i < selectedWord.length; i++) {
+                if (selectedWord[i] === letter) guessedWord[i] = letter;
+            }
+            document.getElementById('wordSpotlight').textContent = guessedWord.join(' ');
+            if (!guessedWord.includes('_')) endGame(true);
+        } else {
+            document.querySelector(`.letter:contains(${letter})`).classList.add('deactivated');
+            mistakes++;
+            drawHangman();
+            if (mistakes === maxMistakes) endGame(false);
+        }
+    }
+
+    function drawHangman() {
+        // Here you would dynamically add parts of the hangman based on 'mistakes'
+        // This would require creating elements or changing styles progressively
+    }
+
+    function drawGallows() {
+        // Initial setup of the gallows
+        // This would involve drawing the base, upright, beam, support, and noose with CSS or SVG
+    }
+
+    function endGame(won) {
+        let message = won ? "Congratulations! You guessed the word!" : "Game Over! The word was: " + selectedWord;
+        alert(message);
+        document.querySelector('button').style.display = 'block';
+    }
+
+    function resetGame() {
+        mistakes = 0;
+        guessedWord = [];
+        document.querySelector('button').style.display = 'none';
+        document.querySelectorAll('.letter').forEach(el => {
+            el.classList.remove('deactivated');
+        });
+        // Clear hangman drawing here
+        setupGame();
+    }
+
+    setupGame();
+</script>
+</body>
+</html>

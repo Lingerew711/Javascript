@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hangman Game</title>
+<style>
+    body { font-family: Arial, sans-serif; text-align: center; background-color: #f0f0f0; }
+    #hangman { width: 200px; height: 200px; margin: 20px auto; position: relative; }
+    .gallows, .man { position: absolute; }
+    .gallows { stroke: #000; stroke-width: 4; }
+    .man { stroke: #ff0000; stroke-width: 2; display: none; }
+    #word { font-size: 2em; letter-spacing: 10px; margin: 20px 0; }
+    #alphabet { margin: 20px auto; width: 80%; }
+    .letter { margin: 5px; padding: 5px 10px; background: #333; color: white; display: inline-block; cursor: pointer; }
+    .letter.disabled { background: #ccc; cursor: not-allowed; }
+    #message { font-size: 1.5em; color: green; }
+    #restart { margin-top: 20px; padding: 10px; font-size: 1em; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<h1>Hangman Game</h1>
+<div id="hangman">
+    <svg class="gallows" width="100%" height="100%">
+        <line x1="10" y1="190" x2="150" y2="190" /> <!-- Base -->
+        <line x1="30" y1="190" x2="30" y2="10" /> <!-- Upright -->
+        <line x1="30" y1="10" x2="130" y2="10" /> <!-- Beam -->
+        <line x1="130" y1="10" x2="130" y2="40" /> <!-- Noose -->
+    </svg>
+    <svg class="man" width="100%" height="100%">
+        <circle cx="130" cy="60" r="20" /> <!-- Head -->
+        <line x1="130" y1="80" x2="130" y2="140" /> <!-- Body -->
+        <line x1="130" y1="100" x2="100" y2="120" /> <!-- Left Arm -->
+        <line x1="130" y1="100" x2="160" y2="120" /> <!-- Right Arm -->
+        <line x1="130" y1="140" x2="110" y2="170" /> <!-- Left Leg -->
+        <line x1="130" y1="140" x2="150" y2="170" /> <!-- Right Leg -->
+    </svg>
+</div>
+<div id="word"></div>
+<div id="alphabet"></div>
+<div id="message"></div>
+<button id="restart">Restart Game</button>
+
+<script>
+const words = ['programming', 'javascript', 'hangman', 'developer', 'computer', 'algorithm'];
+let selectedWord = '';
+let guessedWord = [];
+let wrongGuesses = 0;
+const maxWrongGuesses = 6;
+
+function setupGame() {
+    selectedWord = words[Math.floor(Math.random() * words.length)];
+    guessedWord = Array(selectedWord.length).fill('_');
+    wrongGuesses = 0;
+    document.getElementById('word').textContent = guessedWord.join(' ');
+    document.getElementById('message').textContent = '';
+    document.querySelector('.man').style.display = 'none';
+    setupAlphabet();
+    updateHangman();
+}
+
+function setupAlphabet() {
+    const alphabetContainer = document.getElementById('alphabet');
+    alphabetContainer.innerHTML = '';
+    for (let i = 65; i <= 90; i++) {
+        let letter = String.fromCharCode(i);
+        let button = document.createElement('span');
+        button.className = 'letter';
+        button.textContent = letter;
+        button.onclick = () => guess(letter);
+        alphabetContainer.appendChild(button);
+    }
+}
+
+function guess(letter) {
+    if (selectedWord.includes(letter)) {
+        for (let i = 0; i < selectedWord.length; i++) {
+            if (selectedWord[i] === letter) guessedWord[i] = letter;
+        }
+        document.getElementById('word').textContent = guessedWord.join(' ');
+        if (!guessedWord.includes('_')) {
+            endGame(true);
+        }
+    } else {
+        wrongGuesses++;
+        updateHangman();
+        if (wrongGuesses >= maxWrongGuesses) {
+            endGame(false);
+        }
+    }
+    document.querySelector(`.letter:contains(${letter})`).classList.add('disabled');
+}
+
+function updateHangman() {
+    const manParts = document.querySelectorAll('.man line, .man circle');
+    for (let i = 0; i < wrongGuesses; i++) {
+        manParts[i].style.display = 'block';
+    }
+    document.querySelector('.man').style.display = 'block';
+}
+
+function endGame(won) {
+    document.getElementById('message').textContent = won ? 'You won! The word was ' + selectedWord : 'Game Over. The word was ' + selectedWord;
+    document.querySelectorAll('.letter').forEach(letter => letter.classList.add('disabled'));
+}
+
+document.getElementById('restart').onclick = setupGame;
+setupGame();
+</script>
+</body>
+</html>

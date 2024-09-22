@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <style>
+@import url('https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@300;400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dosis:wght@600;700&display=swap');
+
+body, html {
+  height: 100%;
+}
+body {
+  font-family: "Dosis", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-style: normal;
+  display: flex;
+  background: #aaa;
+  flex-direction: column;
+  align-items: center;
+}
+
+#gallows {
+  margin-top: 40px;
+  position: relative;
+  overflow: hidden;
+  width: 200px;
+  min-height: 200px;
+  background: linear-gradient(#aaa, #d3d3d3);
+  border-radius: 5px;
+  box-shadow: inset 0 0 40px 0 rgba(0, 0, 0, 0.4);
+}
+
+#gallows div {
+  position: absolute;
+}
+
+#gallows .ground {
+  border-radius: 400px;
+  background: black;
+  height: 400px;
+  width: 400px;
+  top: 175px;
+  left: -100px;
+}
+
+#gallows .upright {
+  width: 10px;
+  height: 170px;
+  background: black;
+  transform: rotate(5deg);
+  left: 140px;
+  top: 10px;
+  border-radius: 2px;
+}
+
+#gallows .crossbar {
+  width: 80px;
+  height: 8px;
+  background: black;
+  transform: rotate(3deg);
+  left: 84px;
+  top: 10px;
+  border-radius: 2px;
+}
+
+#gallows .angle {
+  width: 7px;
+  height: 40px;
+  background: black;
+  transform: rotate(-38deg);
+  top: 12px;
+  left: 131px;
+}
+
+#gallows .grass {
+  width: 2px;
+  height: 20px;
+  background: black;
+  border-radius: 50%;
+  transform: rotate(-5deg);
+  top: 162px;
+  left: 131px;
+}
+
+#gallows .grass.b {
+  transform: rotate(-18deg);
+  top: 167px;
+  left: 129px;
+}
+#gallows .grass.c {
+  transform: rotate(18deg);
+  top: 167px;
+  left: 144px;
+}
+
+#gallows .knot {
+  width: 4px;
+  height: 4px;
+  background: black;
+  border-radius: 10px;
+  left: 89px;
+  top: 7px;
+}
+
+#gallows #body {
+  transform-origin: 90px 15px;
+}
+
+#gallows #body .rope {
+  width: 45px;
+  height: 4px;
+  background: radial-gradient(circle, black 2px, transparent 0) 0 0/3px;
+  transform: rotate(90deg);
+  top: 36px;
+  left: 68px;
+}
+#gallows #body .noose {
+  width: 4px;
+  height: 14px;
+  border: 3px solid black;
+  border-radius: 60% 45% 50%;
+  left: 85px;
+  top: 57px;
+}
+
+#gallows #body .head {
+  width: 24px;
+  height: 26px;
+  background: transparent;
+  border-radius: 50%;
+  transform: rotate(-45deg);
+  top: 40px;
+  left: 70px;
+}
+
+#gallows #body .body {
+  width: 24px;
+  height: 50px;
+  background: transparent;
+  border-radius: 80% 50% 5% 15%;
+  top: 60px;
+  left: 74px;
+}
+#gallows #body .leg {
+  width: 9px;
+  height: 60px;
+  background: transparent;
+  border-radius: 90% 10% 3px 10px;
+  top: 90px;
+  left: 75px;
+}
+#gallows #body .leg.right {
+  width: 10px;
+  top: 95px;
+  left: 86px;
+}
+
+#gallows #body .arm {
+  width: 8px;
+  height: 50px;
+  background: transparent;
+  border-radius: 90% 10% 6px 90%;
+  top: 65px;
+  left: 73px;
+  transform: rotate(9deg);
+}
+
+#gallows #body * {
+  transition: transform 0.2s ease-in-out;
+}
+
+#gallows #body *.show {
+  background: black;
+}
+#gallows #body *.die {
+  transform: translateY(10px);
+}
+
+#gallows #body .noose.show {
+  display: none;
+}
+
+#gallows #body .arm.right {
+  height: 55px;
+  border-radius: 10% 90% 90% 6px;
+  top: 62px;
+  left: 97px;
+  transform: rotate(-9deg);
+}
+
+#guess {
+  font-family: "Londrina Solid", sans-serif;
+  font-weight: 300;
+  font-style: normal;
+  font-size: 40px;
+  line-height: 40px;
+  text-transform: uppercase;
+  margin: 30px 0 50px;
+}
+
+#guess p {
+  margin: 0;
+  height: 40px;
+}
+
+#guess p span {
+  height: 40px;
+  width: 32px;
+  display: inline-block;
+  text-align: center;
+  border-bottom: 4px solid #666;
+  margin: 0 5px;
+  color: transparent;
+}
+#guess p span.show {
+  color: rgba(0, 0, 15, 1);
+}
+
+#guess p span.space {
+  border-bottom: none;
+  width: 4px;
+  height: 1px;
+  margin: 0 10px;
+}
+
+#letters {
+  transition: opacity 0.4s ease-in-out;
+}
+#letters.hide {
+  opacity: 0;
+  display: none;
+}
+#letters .row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 6px;
+}
+
+#letters .row .letter {
+  text-transform: uppercase;
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+  color: #111;
+  background: #bbb;
+  font-size: 28px;
+  line-height: 44px;
+  text-align: center;
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.4s ease-in-out;
+}
+#letters .row .letter:not(.used, .notused) {
+  cursor: pointer;
+}
+
+#letters .row .letter:hover {
+  color: #bbb;
+  background: #111;
+}
+#letters .row .letter.used {
+  color: rgba(17, 17, 17, 0.1);
+  background: rgba(187, 187, 187, 0.3);
+}
+#letters .row .letter.notused {
+  color: #111;
+  background: rgba(187, 187, 187, 0.3);
+}
+#letters .row .letter.notused::after,
+#letters .row .letter.notused::before {
+  content: "";
+  position: absolute;
+  height: 30px;
+  width: 3px;
+  background: #555;
+  border-radius: 2px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+#letters .row .letter.notused::before {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+#game-text {
+  font-weight: 700;
+  text-transform: uppercase;
+  position: absolute;
+  pointer-events: none;
+  font-size: 64px;
+  color: black;
+  transform: translateY(100%);
+  background: linear-gradient(darkgrey, grey);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0px 3px 1px #000);
+  transform: scale(0.4);
+  opacity: 0;  
+}
+#game-text.animate {
+  animation: zoomin 2s;
+}
+
+@keyframes zoomin {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.button {
+  text-transform: uppercase;
+  display: inline-block;  
+  height: 44px;
+  color: #111;
+  background: #bbb;
+  font-size: 20px;
+  padding: 0 16px;
+  line-height: 44px;
+  text-align: center;
+  border-radius: 10px;
+  position: relative;
+  transition: all 0.4s ease-in-out;
+  cursor: pointer;
+  opacity: 0;
+  display: none;
+}
+.button:hover {
+  color: #bbb;
+  background: #111;
+}
+.button.show {
+  display: block;
+  opacity: 1;
+}
+
+    </style>
+</head>
+<body>
+    <div id="gallows">  
+        <div class="upright"></div>
+        <div class="crossbar"></div>
+        <div class="angle"></div>
+        <div class="grass"></div>
+        <div class="grass b"></div>
+        <div class="grass c"></div>
+        <div class="knot"></div>
+        <div id="body">
+          <div class="rope"></div>
+          <div class="noose"></div>
+          <div id="t1" class="head"></div>
+          <div id="t2" class="body"></div>
+          <div id="t5" class="leg"></div>
+          <div id="t6" class="leg right"></div>
+          <div id="t3" class="arm"></div>
+          <div id="t4" class="arm right"></div>
+        </div>
+        <div class="ground"></div>
+      </div>
+      <div id="guess">
+        <p><!--<span class="show">j</span><span>e</span><span>m</span><span class="space"></span><span>m</span><span>a</span><span>r</span><span>e</span><span>t</span><span>t</span>--></p>
+      </div>
+      <div id="letters">
+        <div class="row">
+          <div class="letter" id="letter-a">a</div>
+          <div class="letter" id="letter-b">b</div>
+          <div class="letter" id="letter-c">c</div>
+          <div class="letter" id="letter-d">d</div>
+          <div class="letter" id="letter-e">e</div>
+          <div class="letter" id="letter-f">f</div>
+          <div class="letter" id="letter-g">g</div>
+          <div class="letter" id="letter-h">h</div>
+          <div class="letter" id="letter-i">i</div>
+        </div>
+        <div class="row">
+          <div class="letter" id="letter-j">j</div>
+          <div class="letter" id="letter-k">k</div>
+          <div class="letter" id="letter-l">l</div>
+          <div class="letter" id="letter-m">m</div>
+          <div class="letter" id="letter-n">n</div>
+          <div class="letter" id="letter-o">o</div>
+          <div class="letter" id="letter-p">p</div>
+          <div class="letter" id="letter-q">q</div>
+        </div>
+        <div class="row">
+          <div class="letter" id="letter-r">r</div>
+          <div class="letter" id="letter-s">s</div>
+          <div class="letter" id="letter-t">t</div>
+          <div class="letter" id="letter-u">u</div>
+          <div class="letter" id="letter-v">v</div>
+          <div class="letter" id="letter-w">w</div>
+          <div class="letter" id="letter-x">x</div>
+          <div class="letter" id="letter-y">y</div>
+          <div class="letter" id="letter-z">z</div>
+        </div>
+      </div>
+      
+      <div class="button" id="reset">Play again</div>
+      
+      <div id="game-text"></div>
+
+
+      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+      <script>
+        var tries;
+var swing = 0;
+var swingAcc;
+var rads = 0;
+
+function setup() {
+  // get random index from array
+  r = Math.floor(Math.random() * gamenames.length);
+  name = gamenames[r]; // set name to index
+  gamenames.splice(r, 1); // remove name from array
+  //console.log(name + ",Array:" + gamenames);
+
+  // set up guess p
+  $("#guess p span").remove(); // remove spans
+  // loop through char in string
+  for (var i = 0; i < name.length; ++i) {
+    var chr = name.charAt(i);
+    if (chr == " ") {
+      $("#guess p").append('<span class="space show"></span>');
+    } else {
+      $("#guess p").append("<span>" + chr + "</span>");
+    }
+    //alert(chr);
+
+    $("#letters .row .letter").removeClass("notused");
+    $("#letters .row .letter").removeClass("used");
+    $("#body *").removeClass("show");
+    $("#body *").removeClass("die");
+  }
+  tries = 0;
+  swingAcc = 1;
+  
+   $("#letters").removeClass('hide');
+   $(".button").removeClass('show');
+  
+}
+
+
+
+function clickletter(tt) {
+  matched = false;
+  $("#guess p").find("span").each(function () {
+      t = $(this).text();      
+      //console.log(t + " " + tt);
+      if (t.toUpperCase() == tt.toUpperCase()) {
+        $(this).addClass("show");
+        //console.log("yes " + t);
+        matched = true;
+      }
+   });
+  return matched;
+}
+
+function checkall() {
+  complete = true;
+  $("#guess p").find("span").each(function () {
+    if (!$(this).hasClass('show')) {
+      complete = false;
+      //console.log(this);
+    }   
+  });
+  return complete;
+}
+
+function fail() {
+  tries = tries + 1;
+  part = "#body #t" + tries;
+  $('#body .noose').addClass('show');
+  $(part).addClass('show');
+  swingAcc = 1.5;
+  if (tries > 6) {
+    $('#t1').addClass('die');
+    $('#t2').addClass('die');
+    $('#t3').addClass('die');
+    $('#t4').addClass('die');
+    $('#t5').addClass('die');
+    $('#t6').addClass('die');
+    textit("Fail!");
+    gameover();
+  }
+}
+
+$("#letters .letter").on("click", function () {
+  if (clickletter($(this).text())) {
+    $(this).addClass('used');
+  } else {
+    $(this).addClass('notused');
+    fail();
+  }
+  if (checkall()) {
+    textit("Winner!");
+    gameover();
+    //alert("winner");
+  }
+});
+
+function gameover() {
+   $("#letters").addClass('hide');
+   $(".button").addClass('show');
+}
+
+$("#reset").on("click", function () {
+  setup();
+});
+
+
+const myInterval = setInterval(enterFrame, 20);
+// 40 = 25fps
+
+function enterFrame() {
+  swingAcc = swingAcc * .9;
+  swing = swing + swingAcc;
+  swing = swing * 0.98;
+  k = Math.cos(rads) * swing;
+  rads = rads + .1;
+  if (rads > ((Math.PI) * 2)) {
+      rads = rads - ((Math.PI) * 2);
+  }
+  //console.log(k);
+  $('#body').css('rotate', k + "deg");
+}
+
+function myStopFunction() {
+  clearInterval(myInterval);
+}
+
+function textit(txt) {
+  //console.log(txt);
+  $("#game-text").html(txt);
+  $("#game-text").addClass("animate");
+  setTimeout(function () {
+    $("#game-text").removeClass("animate");
+  }, 2010);
+}
+
+
+var names = [
+  "Bilbo Baggins",
+  "Harry Potter",
+  "Han Solo",
+  "Tony Stark",
+  "Clark Kent",
+  "Tony Stark",
+  "Wednesday Addams",
+  "Ethan Hunt",
+  "Samwise Gamgee",
+  "Donnie Darko",
+  "James T Kirk",
+  "Peter Quill",
+  "Yony Montana",
+  "Ace Ventura",
+  "Sarah Connor",
+  "Anakin Skywalker",
+  "Katniss Everdeen",
+  "Jack Burton",
+  "Axel Foley",
+  "Michael Corleone",
+  "Shaun Riley",
+  "Harry Callahan",
+  "Lester Burnham",
+  "Rick Deckard",
+  "Steve Rogers",
+  "Tommy DeVito",
+  "Keyzer Soze",
+  "Ferris Bueller",
+  "Walter Sobchak",
+  "Withnail",
+  "Rocky Balboa",
+  "Peter Venkman",
+  "Gandalf the Grey",
+  "Snake Plissken",
+  "Forrest Gump",
+  "Ellen Ripley",
+  "Patrick Bateman",
+  "Hannibal Lecter",
+  "Ron Burgundy",
+  "Jack Sparrow",
+  "Marty McFly",
+  "Tyler Durden",
+  "John Maclane",
+  "James Bond",
+  "Indianna Jones",
+  "Rick Blaine",
+  "Robin Hood",
+  "Butch Cassidy",
+  "Erin Brockovich",
+  "Marge Gunderson",
+  "Nurse Ratched",
+  "Annie Wilkes",
+  "Eleanor Iselin",
+  "Eve Harrington",
+  "Gordon Gekko",
+  "Jack Torrance",
+  "Carol Danvers",
+  "Cruella De Vil",
+  "Freddy Krueger",
+  "Clarice Starling",
+  "Hermione Granger",
+  "Leia Organa",
+  "Lara Croft",
+  "Mary Poppins",
+  "Diana Prince",
+  "Natasha Romanoff",
+  "Dorothy Gale",
+  "Dana Scully",
+  "Jobu Tupaki",
+  "Lisbeth Salander",
+  "Letty Ortiz",
+  "Ilsa Faust",
+  "Rita Vrataski"
+];
+
+var gamenames = names;
+var name;
+
+setup();
+      </script>
+</body>
+</html>
