@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ant Killer Game</title>
+<style>
+    body { 
+        font-family: Arial, sans-serif; 
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f0f0f0;
+    }
+    #gameArea {
+        position: relative;
+        background: url('https://i.postimg.cc/bNPMJWgW/wooden-texture.jpg');
+        background-size: cover;
+        width: 600px;
+        height: 400px;
+        border: 2px solid #000;
+        overflow: hidden;
+    }
+    .ant {
+        position: absolute;
+        width: 30px;
+        height: auto;
+        cursor: pointer;
+    }
+    .controls, .scores {
+        position: absolute;
+        top: 10px;
+        display: flex;
+        gap: 10px;
+    }
+    .controls { right: 10px; }
+    .scores { left: 10px; }
+    .heart {
+        width: 20px;
+        height: 20px;
+        background: red;
+        clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        margin: 0 2px;
+    }
+    .heart.empty { background: none; border: 2px solid red; }
+    button { 
+        padding: 5px 10px; 
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+<div id="gameArea">
+    <div class="scores">
+        <div>Score: <span id="score">0</span></div>
+        <div>Best: <span id="bestScore">0</span></div>
+    </div>
+    <div class="controls">
+        <button id="startPause">Start</button>
+        <button id="restart">Restart</button>
+        <div id="hearts"></div>
+    </div>
+</div>
+
+<script>
+let gameArea = document.getElementById('gameArea');
+let scoreDisplay = document.getElementById('score');
+let bestScoreDisplay = document.getElementById('bestScore');
+let startPauseBtn = document.getElementById('startPause');
+let restartBtn = document.getElementById('restart');
+let heartsContainer = document.getElementById('hearts');
+
+let gameRunning = false;
+let ants = [];
+let score = 0;
+let bestScore = 0;
+let lives = 5;
+let animationFrameId;
+
+const createAnt = () => {
+    let ant = document.createElement('img');
+    ant.src = 'https://i.postimg.cc/yYNdwQ94/ant.png';
+    ant.className = 'ant';
+    ant.style.left = `${Math.random() * (gameArea.offsetWidth - 30)}px`;
+    ant.style.top = '0px';
+    ant.onclick = () => {
+        gameArea.removeChild(ant);
+        ants.splice(ants.indexOf(ant), 1);
+        score++;
+        scoreDisplay.textContent = score;
+    };
+    gameArea.appendChild(ant);
+    return ant;
+};
+
+const moveAnts = () => {
+    ants.forEach(ant => {
+        let top = parseInt(ant.style.top) || 0;
+        if (top < gameArea.offsetHeight) {
+            ant.style.top = `${top + 2}px`; // Speed of ants
+        } else {
+            gameArea.removeChild(ant);
+            ants.splice(ants.indexOf(ant), 1);
+            loseLife();
+        }
+    });
+};
+
+const loseLife = () => {
+    if (--lives <= 0) {
+        gameOver();
+    } else {
+        document.querySelector('.heart:not(.empty)').classList.add('empty');
+    }
+};
+
+const gameOver = () => {
+    cancelAnimationFrame(animationFrameId);
+    gameRunning = false;
+    startPauseBtn.textContent = 'Start';
+    restartBtn.style.display = 'inline';
+    heartsContainer.querySelectorAll('.heart').forEach(heart => heart.classList.add('empty'));
+    if (score > bestScore) {
+        bestScore = score;
+        bestScoreDisplay.textContent = bestScore;
+    }
+};
+
+const gameLoop = () => {
+    if (gameRunning) {
+        if (Math.random() < 0.02) { // Probability of ant creation
+            ants.push(createAnt());
+        }
+        moveAnts();
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+};
+
+const startPauseGame = () => {
+    if (!gameRunning) {
+        gameRunning = true;
+        startPauseBtn.textContent = 'Pause';
+        animationFrameId = requestAnimationFrame(gameLoop);
+    } else {
+        gameRunning = false;
+        startPauseBtn.textContent = 'Resume';
+        cancelAnimationFrame(animationFrameId);
+    }
+};
+
+const restartGame = () => {
+    score = 0;
+    scoreDisplay.textContent = score;
+    lives = 5;
+    ants.forEach(ant => gameArea.removeChild(ant));
+    ants = [];
+    restartBtn.style.display = 'none';
+    heartsContainer.innerHTML = ''; // Clear hearts
+    for(let i = 0; i < 5; i++) {
+        heartsContainer.innerHTML += '<div class="heart"></div>';
+    }
+    startPauseGame();
+};
+
+// Initialize game
+for(let i = 0; i < 5; i++) {
+    heartsContainer.innerHTML += '<div class="heart"></div>';
+}
+
+startPauseBtn.onclick = startPauseGame;
+restartBtn.onclick = restartGame;
+</script>
+</body>
+</html>

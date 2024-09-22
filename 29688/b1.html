@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ant Smasher</title>
+    <style>
+        body { margin: 0; padding: 0; background: #f4f4f4; font-family: Arial, sans-serif; }
+        #game-area {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            background: url('https://i.postimg.cc/bNPMJWgW/wooden-texture.jpg') no-repeat center center;
+            background-size: cover;
+            border: 2px solid #8B4513;
+        }
+        .hearts, #score, #best-score, .controls { 
+            position: absolute;
+            color: white;
+            font-size: 20px;
+        }
+        .hearts { top: 10px; right: 10px; }
+        .heart { margin-left: 5px; }
+        #score, #best-score { top: 10px; left: 10px; }
+        .controls { bottom: 10px; width: 100%; text-align: center; }
+        button { padding: 10px 20px; margin: 0 5px; }
+        .heart { color: red; }
+        .empty-heart { color: #8B4513; }
+    </style>
+</head>
+<body>
+<div id="game-area">
+    <div class="hearts" id="hearts"></div>
+    <div id="score">Score: 0</div>
+    <div id="best-score">Best: 0</div>
+    <div class="controls">
+        <button id="startPause">Start</button>
+        <button id="restart" style="display:none;">Restart</button>
+    </div>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+</div>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const antImg = new Image();
+    antImg.src = 'https://i.postimg.cc/yYNdwQ94/ant.png';
+    let ants = [], score = 0, bestScore = 0, lives = 5, gameState = 'paused';
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ants.forEach(ant => {
+            ctx.drawImage(antImg, ant.x, ant.y, 50, 50);
+            ant.y += ant.speed;
+            if (ant.y > canvas.height) {
+                lives--;
+                updateHearts();
+                if (lives === 0) gameOver();
+                else ants.shift(); // Remove ant that reached the bottom
+            }
+        });
+        if (gameState === 'running') requestAnimationFrame(draw);
+    }
+
+    function spawnAnt() {
+        if (gameState === 'running') {
+            ants.push({x: Math.random() * (canvas.width - 50), y: -50, speed: Math.random() * 2 + 1});
+            setTimeout(spawnAnt, Math.random() * 1000 + 500);
+        }
+    }
+
+    function clickHandler(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left, y = e.clientY - rect.top;
+        ants = ants.filter(ant => {
+            if (x > ant.x && x < ant.x + 50 && y > ant.y && y < ant.y + 50) {
+                score++;
+                document.getElementById('score').innerText = 'Score: ' + score;
+                return false;
+            }
+            return true;
+        });
+    }
+
+    function gameOver() {
+        gameState = 'gameOver';
+        document.getElementById('startPause').style.display = 'none';
+        document.getElementById('restart').style.display = 'inline';
+        if (score > bestScore) {
+            bestScore = score;
+            document.getElementById('best-score').innerText = 'Best: ' + bestScore;
+        }
+    }
+
+    function updateHearts() {
+        const heartsDiv = document.getElementById('hearts');
+        heartsDiv.innerHTML = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
+    }
+
+    function startPauseGame() {
+        if (gameState === 'paused') {
+            gameState = 'running';
+            document.getElementById('startPause').textContent = 'Pause';
+            requestAnimationFrame(draw);
+            spawnAnt();
+        } else if (gameState === 'running') {
+            gameState = 'paused';
+            document.getElementById('startPause').textContent = 'Resume';
+        }
+    }
+
+    function restartGame() {
+        score = 0;
+        lives = 5;
+        ants = [];
+        updateHearts();
+        document.getElementById('score').innerText = 'Score: 0';
+        document.getElementById('restart').style.display = 'none';
+        document.getElementById('startPause').style.display = 'inline';
+        gameState = 'paused';
+    }
+
+    canvas.addEventListener('click', clickHandler);
+    document.getElementById('startPause').addEventListener('click', startPauseGame);
+    document.getElementById('restart').addEventListener('click', restartGame);
+
+    // Initial setup
+    updateHearts();
+</script>
+</body>
+</html>
