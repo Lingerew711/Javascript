@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shape Drawing Pad</title>
+<style>
+body { font-family: Arial, sans-serif; }
+#controls { margin-bottom: 10px; }
+canvas { border: 1px solid black; }
+button, select, input { margin: 5px; }
+</style>
+</head>
+<body>
+<div id="controls">
+  <label>Color: <input type="color" id="colorPicker"></label>
+  <label>Shape: 
+    <select id="shapeSelect">
+      <option value="rectangle">Rectangle</option>
+      <option value="circle">Circle</option>
+      <option value="line">Line</option>
+    </select>
+  </label>
+  <label>Line Width: <input type="number" id="lineWidth" value="2" min="1"></label>
+  <label>Cyclic Rotations: <input type="number" id="rotations" value="1" min="1" max="8"></label>
+  <label><input type="checkbox" id="mirror"> Mirror</label>
+  <label><input type="checkbox" id="showQuarters"> Show Quarters</label>
+  <button onclick="undo()">Undo</button>
+  <button onclick="redo()">Redo</button>
+  <button onclick="clearCanvas()">Clear</button>
+</div>
+<canvas id="drawCanvas" width="800" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById('drawCanvas');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+let startX, startY;
+let history = [];
+let historyIndex = -1;
+let mirror = false;
+let showQuarters = false;
+let rotations = 1;
+
+canvas.onmousedown = startDrawing;
+canvas.onmouseup = stopDrawing;
+canvas.onmouseout = stopDrawing;
+canvas.onmousemove = draw;
+
+document.getElementById('mirror').onchange = function() { mirror = this.checked; };
+document.getElementById('showQuarters').onchange = function() { 
+    showQuarters = this.checked; 
+    drawGrid();
+};
+document.getElementById('rotations').onchange = function() { rotations = parseInt(this.value); drawGrid(); };
+
+function startDrawing(e) {
+    isDrawing = true;
+    [startX, startY] = [e.offsetX, e.offsetY];
+    history.push([]);
+    historyIndex++;
+}
+
+function stopDrawing() {
+    isDrawing = false;
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    const current = history[historyIndex];
+    const x = e.offsetX;
+    const y = e.offsetY;
+    const color = document.getElementById('colorPicker').value;
+    const shape = document.getElementById('shapeSelect').value;
+    const lineWidth = document.getElementById('lineWidth').value;
+
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+
+    if (shape === 'line') {
+        current.push({type: 'line', from: {x: startX, y: startY}, to: {x, y}});
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+    } else if (shape === 'rectangle') {
+        const width = x - startX;
+        const height = y - startY;
+        current.push({type: 'rect', x: startX, y: startY, width, height});
+        drawShape('rect', startX, startY, width, height);
+    } else if (shape === 'circle') {
+        const radius = Math.sqrt(Math.pow(x - startX, 2) + Math.pow(y - startY, 2));
+        current.push({type: 'circle', x: startX, y: startY, radius});
+        drawShape('circle', startX, startY, radius);
+    }
+
+    if (mirror) {
+        const mirrorX = canvas.width - x;
+        if (shape === 'line') {
+            ctx.beginPath();
+            ctx.moveTo(canvas.width - startX, startY);
+            ctx.lineTo(mirrorX, y);
+            ctx.stroke();
+        } else {
+            drawShape(shape, canvas.width - startX, startY, shape === 'circle' ? radius : width, height);
+        }
+    }
+
+    drawCyclicRotations(shape, startX, startY, x, y, color, lineWidth);
+}
+
+function drawShape(type, x, y, arg1, arg2) {
+    ctx.beginPath();
+    if (type === 'rect') {
+        ctx.rect(x, y, arg1, arg2);
+    } else if (type === 'circle') {
+        ctx.arc(x, y, arg1, 0, 2 * Math.PI);
+    }
+    ctx.stroke();
+    if (type !== 'line') ctx.fill();
+}
+
+function drawCyclicRotations(shape, startX, startY, endX, endY, color, lineWidth) {
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    const angle = (2 * Math.PI) / rotations;
+    for (let i = 0; i < rotations; i++) {
+        ctx.rotate(angle);
+        ctx.beginPath();
+        if (shape === 'line') {
+            ctx.moveTo(startX - canvas.width / 2, startY - canvas.height / 2);
+            ctx.lineTo(endX - canvas.width / 2, endY - canvas.height / 2);
+        } else {
+            const args = shape === 'rect' ? [startX - canvas.width / 2, startY - canvas.height / 2, endX - startX, endY - startY] : 
+                                            [startX - canvas.width / 2, startY - canvas.height / 2, Math.sqrt(Math.pow(endX - startX, 2) + Math.pow(endY - startY, 2))];
+            drawShape(shape, ...args);
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+        if (shape !== 'line') ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawGrid() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (showQuarters && rotations > 1) {
+        ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 1; i < rotations; i++) {
+            const angle = (i * Math.PI * 2) / rotations;
+            ctx.moveTo(canvas.width / 2, canvas.height / 2);
+            ctx.lineTo(canvas.width / 2 + canvas.width * Math.cos(angle) / 2, 
+                       canvas.height / 2 + canvas.height * Math.sin(angle) / 2);
+        }
+        ctx.stroke();
+        // Draw axes
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height / 2);
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+    }
+}
+
+function undo() {
+    if (historyIndex > 0) {
+        historyIndex--;
+        redrawCanvas();
+    }
+}
+
+function redo() {
+    if (historyIndex < history.length - 1) {
+        historyIndex++;
+        redrawCanvas();
+    }
+}
+
+function clearCanvas() {
+    history = [];
+    historyIndex = -1;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function redrawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    for (let i = 0; i <= historyIndex; i++) {
+        history[i].forEach(action => {
+            ctx.strokeStyle = ctx.fillStyle = action.color || document.getElementById('colorPicker').value;
+            ctx.lineWidth = action.lineWidth || document.getElementById('lineWidth').value;
+            drawShape(action.type, action.x || action.from.x, action.y || action.from.y, action.width || action.radius || action.to.x - action.from.x, action.height || action.to.y - action.from.y);
+        });
+    }
+}
+</script>
+</body>
+</html>

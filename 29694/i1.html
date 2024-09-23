@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Board</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Raleway');
+
+body {
+  width: 100%;
+  margin: 0;
+  overflow: auto;
+  background: hsla(0, 5%, 5%, 1);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-image: linear-gradient(to right top, hsla(0, 0%, 5%, 0.5), hsla(0, 5%, 15%, 1));
+  font-family: 'Raleway', sans-serif;
+}
+
+body h2 {
+  text-align: center;
+  margin-top: 3%;
+  color: white;
+  font-weight: bold;
+}
+
+body span {
+  font-size: 80%;
+}
+
+body span#note {
+  font-size: 60%;
+}
+
+.main {
+  width: 100%;
+}
+
+table {
+  width: 95%;
+  position: absolute;
+  margin: 0 auto;
+  left: 2em;
+  border: 0;
+  vertical-align: middle;
+}
+
+table td#left {
+  padding: 1em;
+  vertical-align: top;
+  color: hsla(224, 5%, 95%, 1);
+}
+
+table td#right {
+  padding: 2em;
+  float: right;
+  vertical-align: top;
+  color: hsla(224, 5%, 95%, 1);
+}
+
+canvas {
+  width: 100%;
+  height: 90%;
+  float: left;
+  display: block;
+  z-index: 1;
+  background: hsla(224, 5%, 95%, 1);
+}
+
+#btn {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+#btn button {
+  border: none;
+  padding: .5em;
+  width: 5em;
+  margin: 1%;
+  background: hsla(0, 5%, 15%, 1);
+  color: hsla(224, 5%, 95%, 1);
+  box-shadow: 1px 1px 2px 2px hsla(0, 0%, 0%, .8);
+}
+
+#btn button:active {
+  box-shadow: 0;
+  outline: 1px dashed hsla(224, 5%, 95%, 1);
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  width: 1.2em;
+  height: 1.2em;
+}
+
+label {
+  padding: .5em;
+}
+
+    </style>
+</head>
+<body>
+    
+
+<div class = 'main'>
+    <h2>Shape Drawing Board<br><span>Cyclic and Dihedral Symmetry</span><br><span id = 'note'>Click && Drag To Draw. Make Something Awesome. Right Click To Save As PNG.</h2>
+    <table>
+    <tr>
+      <td id = 'left'><br /><br />
+    <input type="checkbox" id="mirror" onchange="mirYes(this.checked)"> <label for="mirror"><b>Mirror?</b></label>
+    <h3>Cyclic Rotations:</h3>
+    <input type="radio" name="rotations" value="1" id="r1" onclick="selRot(this.value)"> <label for="r1">None</label><br>
+    <input type="radio" name="rotations" value="2" id="r2" onclick="selRot(this.value)"> <label for="r2">Two</label><br>
+    <input type="radio" name="rotations" value="3" id="r3" onclick="selRot(this.value)"> <label for="r3">Three</label><br>
+    <input type="radio" name="rotations" value="4" id="r4" onclick="selRot(this.value)"> <label for="r4">Four</label><br>
+    <input type="radio" name="rotations" value="5" id="r5" onclick="selRot(this.value)"> <label for="r5">Five</label><br>
+    <input type="radio" name="rotations" value="6" id="r6" onclick="selRot(this.value)"> <label for="r6">Six</label><br>
+    <input type="radio" name="rotations" value="7" id="r7" onclick="selRot(this.value)"> <label for="r7">Seven</label><br>
+    <input type="radio" name="rotations" value="8" id="r8" onclick="selRot(this.value)"> <label for="r8">Eight</label><br>
+    <input type="radio" name="rotations" value="9" id="r9" onclick="selRot(this.value)"> <label for="r9">Nine</label><br>
+    <input type="radio" name="rotations" value="10" id="r10" onclick="selRot(this.value)"> <label for="r10">Ten</label><br>
+    <input type="radio" name="rotations" value="11" id="r11" onclick="selRot(this.value)"> <label for="r11">Eleven</label><br>
+    <input type="radio" name="rotations" value="12" id="r12" onclick="selRot(this.value)"> <label for="r12">Twelve</label><br>
+    <input type="radio" name="rotations" value="13" id="r13" onclick="selRot(this.value)"> <label for="r13">Thirteen</label><br>
+    <input type="radio" name="rotations" value="14" id="r14" onclick="selRot(this.value)"> <label for="r14">Fourteen</label><br>
+    <input type="radio" name="rotations" value="15" id="r15" onclick="selRot(this.value)"> <label for="r15">Fifteen</label><br>
+    <input type="radio" name="rotations" value="16" id="r16" onclick="selRot(this.value)"> <label for="r16">Sixteen</label><br>
+    <input type="radio" name="rotations" value="17" id="r17" onclick="selRot(this.value)"> <label for="r17">Seventeen</label><br>
+    <input type="radio" name="rotations" value="18" id="r18" onclick="selRot(this.value)"> <label for="r18">Eighteen</label><br>
+    <input type="radio" name="rotations" value="19" id="r19" onclick="selRot(this.value)"> <label for="r19">Nineteen</label><br>
+    <input type="radio" name="rotations" value="20" id="r20" onclick="selRot(this.value)"> <label for="r20">Twenty</label><br>
+    </td>
+    <td id = 'canvas'>
+    <canvas id="canv" width=600 height=600></canvas>
+    <p id="btn">
+    <button id="undo" onclick="undo()">Undo</button>
+       <button id="redo" onclick="redo()">Redo</button>
+       <button id="clearSym" onclick="clearSym()">Clear</button>
+        <input type="checkbox" onchange="draw()" id="showQ" ><label for="showQ" style="color:white">Show Quarters?</label>
+    </p>
+    </td>
+    <td id = 'right'>
+    <h3>Instrument:</h3>
+    <input type="radio" name="inst" value="0" id="i0" onclick="selInst(this.value)"> <label for="i0">Line</label><br>
+    <input type="radio" name="inst" value="1" id="i1" onclick="selInst(this.value)"> <label for="i1">Rectangle</label><br>
+    <input type="radio" name="inst" value="2" id="i2" onclick="selInst(this.value)"> <label for="i2">Oval</label><br>
+    <input type="radio" name="inst" value="3" id="i3" onclick="selInst(this.value)"> <label for="i3">Filled Rect</label><br>
+    <input type="radio" name="inst" value="4" id="i4" onclick="selInst(this.value)"> <label for="i4">Filled Oval</label><br>
+    <h3>Line Width:</h3>
+    <input type="radio" name="linewidth" value="1" id="lw1" onclick="selLW(this.value)"> <label for="lw1">1</label><br>
+    <input type="radio" name="linewidth" value="2" id="lw2" onclick="selLW(this.value)"> <label for="lw2">2</label><br>
+    <input type="radio" name="linewidth" value="3" id="lw3" onclick="selLW(this.value)"> <label for="lw3">3</label><br>
+    <input type="radio" name="linewidth" value="4" id="lw4" onclick="selLW(this.value)"> <label for="lw4">4</label><br>
+    <input type="radio" name="linewidth" value="5" id="lw5" onclick="selLW(this.value)"> <label for="lw5">5</label><br>
+    <input type="radio" name="linewidth" value="10" id="lw10" onclick="selLW(this.value)"> <label for="lw10">10</label><br>
+    <input type="radio" name="linewidth" value="20" id="lw20" onclick="selLW(this.value)"> <label for="lw20">20</label><br>
+    <h3>Color:</h3>
+    <input type="radio" name="color" value="0" id="c0" onclick="selCol(this.value)"> <label for="c0">Black</label><br>
+    <input type="radio" name="color" value="1" id="c1" onclick="selCol(this.value)"> <label for="c1">Red</label><br>
+    <input type="radio" name="color" value="2" id="c2" onclick="selCol(this.value)"> <label for="c2">Green</label><br>
+    <input type="radio" name="color" value="3" id="c3" onclick="selCol(this.value)"> <label for="c3">Blue</label><br>
+    <input type="radio" name="color" value="4" id="c4" onclick="selCol(this.value)"> <label for="c4">Cyan</label><br>
+    <input type="radio" name="color" value="5" id="c5" onclick="selCol(this.value)"> <label for="c5">Magenta</label><br>
+    <input type="radio" name="color" value="6" id="c6" onclick="selCol(this.value)"> <label for="c6">Yellow</label><br>
+    <input type="radio" name="color" value="7" id="c7" onclick="selCol(this.value)"> <label for="c7">Light Gray</label><br>
+    <input type="radio" name="color" value="8" id="c8" onclick="selCol(this.value)"> <label for="c8">Gray</label><br>
+    <input type="radio" name="color" value="9" id="c9" onclick="selCol(this.value)"><label for="c9">Dark Gray</label><br>
+    </td>
+    </tr>
+    </table>
+    </main>
+
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        "use strict";
+ var $$ = function (id) {
+        		return document.getElementById(id);
+				 }
+ 
+var c, $;
+var syms = [];
+var cnt = 0;
+var drag = null;
+
+var rot = 4;
+var mir = false;
+
+var currCol = "hsla(0,0%,0%,1)";
+var currInst = 0;
+var currLW = 3;
+var currLC = "round";
+
+var cleared = null;
+
+
+var cols = ["hsla(0,0%,0%,1)", 
+              "hsla(0,100%,50%,1)", 
+              "hsla(120,100%,37%,1)", 
+              "hsla(240,100%,50%,1)", 
+              "hsla(180,100%,37%,1)", 
+              "hsla(300,100%,43%,1)",
+              "hsla(60,100%,50%,1)", 
+              "hsla(0,0%,87%,1)", 
+              "hsla(0,0%,60%,1)", 
+              "hsla(0,0%,33%,1)"];
+
+function draw() {
+    $.fillStyle = "hsla(224, 5%, 95%, 1)";
+    $.fillRect(0,0,c.width,c.height);
+    for (var i = 0; i < cnt; i++) {
+        drawSym(syms[i]);
+    }
+    if (drag != null) { 
+        drawSym(drag);
+    }
+    if ($$("showQ").checked) {
+        drawQuarts();
+    }
+}
+
+function drawSym(item) {
+    if (item.type > 2) {
+        $.fillStyle = item.color;
+    }
+    else {
+        $.strokeStyle = item.color;
+        $.lineWidth = item.lineWidth;
+        $.lineCap = item.lineCap;
+    }
+    drawSimp(item.type,item.x1,item.x2,item.y1,item.y2);
+    var dx = c.width/2;
+    var dy = c.height/2;
+    if (rot > 0) {
+        var da = 2*Math.PI/rot;
+        for (var i = 0; i < rot; i++) {
+            $.save();
+            $.translate(dx,dy);
+            $.rotate(i*da);
+            $.translate(-dx,-dy);
+            drawSimp(item.type,item.x1,item.x2,item.y1,item.y2);
+            $.restore();
+        }
+    }
+    if (mir) { 
+        $.save();
+        $.translate(dx,dy);
+        $.scale(-1,1);
+        $.translate(-dx,-dy);
+        drawSimp(item.type,item.x1,item.x2,item.y1,item.y2);
+        if (rot > 0) {
+            var da = 2*Math.PI/rot;
+            for (var i = 0; i < rot; i++) {
+                $.save();
+                $.translate(dx,dy);
+                $.rotate(i*da);
+                $.translate(-dx,-dy);
+                drawSimp(item.type,item.x1,item.x2,item.y1,item.y2);
+                $.restore();
+            }
+        }
+        $.restore();
+    }
+}
+
+function drawSimp(type,x1,x2,y1,y2) {
+    if (type == 0)
+        $.strokeLine(x1, y1, x2, y2);
+    else if (type == 1)
+        $.stroker(x1, y1, x2, y2);
+    else if (type == 2)
+        $.strokeOval(x1, y1, x2, y2);
+    else if (type == 3)
+        $.rectFiller(x1, y1, x2, y2);
+    else 
+        $.fillOval(x1, y1, x2, y2);
+}
+
+function drawQuarts() {
+    $.lineWidth = 1;
+    $.lineCap = "butt";
+    $.globalAlpha = 0.5;
+    for (var i = 0; i < 2; i++) {
+        $.save();
+        if (i == 1) {
+            $.strokeStyle = "hsla(0,0%,0%,1)";
+            $.translate(0.5,0.5);
+        }
+        else {
+            $.strokeStyle = "hsla(255,255%,255%,1)";
+            $.translate(-0.5,-0.5);
+        }
+        var w = c.width;
+        var h = c.height;
+        if (rot == 1) {
+            if (mir) {
+                $.strokeLine(w/2,0,w/2,h);
+            }
+        }
+        else {
+            var da = 2*Math.PI/rot;
+            $.save();
+            for (var j = 0; j < rot; j++) { 
+                $.strokeLine(w/2,h/2,w/2,-h);
+                $.translate(w/2,h/2);
+                $.rotate(da);
+                $.translate(-w/2,-h/2);
+            }
+            $.restore();
+           
+        }
+        $.restore();
+    }
+    $.globalAlpha = 1.0;
+}
+
+function undo() {
+    if (cleared != null) {
+        syms = cleared;
+        cnt = syms.length;
+        draw();
+        $$("undo").disabled = false;
+        $$("redo").disabled = true;
+        cleared = null;
+    }
+    else if (cnt > 0) {
+        cnt--;
+        draw();
+        if (cnt == 0)
+            $$("undo").disabled = true;
+            $$("redo").disabled = false;
+    }
+}
+
+function redo() {
+    if (cnt < syms.length) {
+        cnt++;
+        draw();
+        if (cnt == syms.length)
+            $$("redo").disabled = true;
+            $$("undo").disabled = false;
+    }
+}
+
+function clearSym() {
+    if (syms.length == 0)
+        return;
+    if (cnt > 0) {
+        if (syms.length > cnt)
+            syms.splice(cnt,syms.length-cnt);
+           cleared = syms;
+    }
+    else {
+        cleared = null;
+    }
+    syms = [];
+    cnt = 0;
+    draw();
+    $$("redo").disabled = true;
+    $$("undo").disabled = cleared == null;
+}
+
+function selLW(lineWidth) {
+    currLW = Number(lineWidth);
+    if (currLW < 3) {
+        currLC = "butt";
+    }
+    else {
+        currLC = "round";
+    }
+}
+
+function selInst(inst) {
+    currInst = inst;
+}
+
+function selCol(num) {
+    num = Number(num);
+    currCol = cols[num];
+}
+
+function selRot(count) {
+    if (count != rot) {
+        rot = count;
+        draw();
+    }
+}
+
+function mirYes(mirror) {
+    mir = mirror;
+    draw();
+}
+
+function ms(c) {
+    function convX(msX) {
+        return msX - c.getBoundingClientRect().left;
+    }
+    function convY(msY) {
+        return msY - c.getBoundingClientRect().top;
+    }
+    function msdr(e){
+        if (drag == null)
+           return;
+        drag.x2 = convX(e.clientX);
+        drag.y2 = convY(e.clientY);
+        draw();
+        e.preventDefault();
+    }
+    function msup(e){
+        if (drag == null)
+            return;
+        c.removeEventListener("mousemove", msdr);
+        document.removeEventListener("mouseup", msup);
+        if ((currInst == 0 && (drag.x1 != drag.x2 || drag.y1 != drag.y2))
+                    || (currInst > 0 && drag.x1 != drag.x2 && drag.y1 != drag.y2)) {
+            if (cnt < syms.length)
+                syms.splice(cnt,syms.length-cnt);
+            syms.push(drag);
+            cnt = syms.length;
+            $$("undo").disabled = false;
+            $$("redo").disabled = true;
+            cleared = null;
+        }
+        drag = null;
+        draw();
+        e.preventDefault();
+    }
+    function msdn(e){
+        if (drag != null || e.button > 0)
+           return;
+        c.addEventListener("mousemove", msdr);
+        document.addEventListener("mouseup", msup);
+        drag = {};
+        drag.type = currInst;
+        drag.color = currCol;
+        drag.lineWidth = currLW;
+        drag.lineCap = currLC;
+        drag.x1 = drag.x2 = convX(e.clientX);
+        drag.y1 = drag.y2 = convY(e.clientY);
+        e.preventDefault();
+    }
+    c.addEventListener("mousedown", msdn);
+}
+
+function add() {
+    $.strokeLine = function(x1,y1,x2,y2) {
+       $.beginPath();
+       $.moveTo(x1,y1);
+       $.lineTo(x2,y2);
+       $.stroke();
+    }
+   $.fillOval = function(x1,y1,x2,y2) {
+       var x,y,hRad,vRad;
+       x = Math.min(x1,x2);
+       y = Math.min(y1,y2);
+       hRad = (Math.max(x1,x2) - x) / 2;
+       vRad = (Math.max(y1,y2) - y) / 2;
+       x += hRad;
+       y += vRad;
+       $.save();
+       $.translate(x,y);
+       $.scale(hRad,vRad);
+       $.beginPath();
+       $.arc(0,0,1,0,2*Math.PI,false);
+       $.restore();
+       $.fill();
+    }
+    $.strokeOval = function(x1,y1,x2,y2) {
+       var x,y,hRad,vRad;
+       x = Math.min(x1,x2);
+       y = Math.min(y1,y2);
+       hRad = (Math.max(x1,x2) - x) / 2;
+       vRad = (Math.max(y1,y2) - y) / 2;
+       x += hRad;
+       y += vRad;
+       $.save();
+       $.translate(x,y);
+       $.scale(hRad,vRad);
+       $.beginPath();
+       $.arc(0,0,1,0,2*Math.PI,false);
+       $.restore();
+       $.stroke();
+    }
+    $.rectFiller = function(x1,y1,x2,y2) {
+       var x,y,w,h;
+       x = Math.min(x1,x2);
+       y = Math.min(y1,y2);
+       w = Math.max(x1,x2) - x;
+       h = Math.max(y1,y2) - y;
+       $.fillRect(x,y,w,h);
+    }
+    $.stroker = function(x1,y1,x2,y2) {
+       var x,y,w,h;
+       x = Math.min(x1,x2);
+       y = Math.min(y1,y2);
+       w = Math.max(x1,x2) - x;
+       h = Math.max(y1,y2) - y;
+       $.strokeRect(x,y,w,h);
+    }
+}
+
+
+function ready() {
+
+        c = document.getElementById("canv");
+        $ = c.getContext("2d");
+  
+        add();
+   
+    $$("r" + rot).checked = true;
+    $$("i" + currInst).checked = true;
+    $$("lw" + currLW).checked = true;
+    $$("c0").checked = true;
+    $$("mirror").checked = mir;
+    $$("undo").disabled = true;
+    $$("redo").disabled = true;
+    $$("showQ").checked = false;
+    ms(c);
+    $.fillStyle = "hsla(0,0%,0%,1)";
+    
+}
+ready();
+
+
+
+    </script>
+</body>
+</html>
