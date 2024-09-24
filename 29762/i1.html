@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brick Breaker</title>
+    <style>
+        canvas {
+  margin: 0 8px 0 8px;
+
+}
+
+body {
+  background-color: #5599aa;
+  color: white;
+}
+button {
+  background-color: rgb(60, 60, 60);
+  color: #8888ff;
+  border-style: solid;
+  border-width: 5px;
+  border-color:rgb(60, 60, 60);
+  padding: 10px 20px; 
+  font-size: 16px; 
+  cursor: pointer;
+}
+    </style>
+</head>
+<body>
+    <table>
+        <tr>
+          <canvas id="gameCanvas"  tabindex="1"></canvas>
+          <td>
+   <button onclick="  if(element.requestFullscreen){
+      element.requestFullscreen();
+    } else if (element.webkitRequestFullscreen){
+      element.webkitRequestFullscreen();
+                     }">fullscreen</button>
+            <button onclick="ScoreAttack()">Score Attack Mode</button>
+            <td>
+              <button onclick="randomBoard()">Random Mode</button>
+              <td>
+                <button onclick="generateBoard()">Generate Board</button>
+  
+                <td>
+                  <button onclick="aiOn()">AI On/Off</button>
+                </td>
+        </tr>
+      </table>
+      <div id="gameOverPopup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;"></div>
+
+      <script>
+
+const BRICK_GAP = 2; // space between bricks
+  var BRICK_W = 80,
+  BRICK_H = 20;
+   const BRICK_COLS = 20; 
+var brickRows = 14,
+  brickGrid = new Array(BRICK_COLS * brickRows),
+  bricksLeft = 0,
+
+  paddleX = 350.1,
+  paddleSpeedX = 0;
+var PADDLE_WIDTH = 100;
+  const PADDLE_THICKNESS = 10,
+  PADDLE_DIST_FROM_EDGE = 60;
+
+var element = document.getElementById('gameCanvas')
+
+var canvas, canvasContext,
+
+  ballX = 0,
+  ballY = 0,
+  ballSpeedX = 5,
+  ballSpeedY = 6,
+
+  mouseX = 0,
+  mouseY = 0,
+
+  playerLives = 3,
+
+  score = 0,
+  pointPerBrick = 2,
+  multiplier = 1,
+
+  readyImg = false,
+  ballHitPaddleLast = false,
+  scoreMode = false,
+  randomMode = false,
+  aiMode = true;
+
+//General
+window.onload = function() {
+  canvas = document.getElementById('gameCanvas');
+  canvasContext = canvas.getContext('2d');
+
+  var framesPerSecond = 60;
+  setInterval(updateAll, 1000 / framesPerSecond);
+
+  canvas.addEventListener('mousedown', handleMouseClick);
+  canvas.addEventListener('mousemove', updateMousePos);
+
+  if (randomMode) {
+    randomBrickReset();
+  } else {
+    brickReset();
+  }
+  setTimeout(function(){
+    ballReset();
+  },20)
+}
+
+var isGameOver = false; // Flag to control game updates
+
+// Modify the updateAll function to check for game over state
+function updateAll() {
+  if (!isGameOver) { // Only update game elements if the game is not over
+    moveAll();
+    drawAll();
+  }
+}
+
+//INPUT
+function updateMousePos(evt) {
+  if (aiMode) {
+    return;
+  } else {
+    var rect = canvas.getBoundingClientRect();
+    var root = document.documentElement;
+
+    mouseX = evt.clientX - rect.left - root.scrollLeft;
+    mouseY = evt.clientY - rect.top - root.scrollTop;
+
+    paddleX = mouseX - PADDLE_WIDTH / 2;
+
+  }
+}
+
+function handleMouseClick(evt) {
+  if (readyImg) {
+    readyImg = false;
+    ballSpeedX = .8;
+    ballSpeedY = 5.5;
+  }
+}
+
+//BRICK/BOARD
+
+function generateBoard() {
+  if (randomMode == false) {
+    return;
+  } else {
+    ballReset();
+    randomBrickReset();
+    score = 0;
+    multiplier = 1;
+    if (scoreMode) {
+      playerLives = 1;
+    } else {
+      playerLives = 3;
+    }
+  } // 
+} // end of generateBoard();
+
+function randomBoard() {
+  if (randomMode) {
+    randomMode = false;
+    brickReset();
+    if (scoreMode) {
+      playerLives = 1;
+    } else { // if NOT scoreMode
+      playerLives = 3;
+    }
+  } else { // if NOT randomMode
+    randomMode = true;
+    randomBrickReset();
+
+    if (scoreMode) {
+      playerLives = 1;
+    } else {
+      playerLives = 3;
+      paddleX = canvas.width / 2;
+    } // end of end randomMode()
+  } // end of start randomMode()
+  ballReset();
+} // end of randomBoard()
+
+function randomBrickReset() {
+  bricksLeft = 0;
+  var i;
+  brickRows = 15 + (Math.random() * 5);
+  for (i = 0; i < (1.5 + Math.random()) * BRICK_COLS; i++) {
+    brickGrid[i] = false;
+  }
+
+  for (; i < BRICK_COLS * brickRows; i++) {
+    if (Math.random() > 0.45) {
+      brickGrid[i] = true;
+      bricksLeft++;
+    } else {
+      brickGrid[i] = false;
+    }
+  } //	end of for COLS * brickRows
+} // end of randomBrickReset()
+
+function brickReset() {
+  bricksLeft = 0;
+  var i;
+  brickRows = 14;
+  for (i = 0; i < 3 * BRICK_COLS; i++) {
+    brickGrid[i] = false;
+  }
+  for (; i < BRICK_COLS * brickRows; i++) {
+    brickGrid[i] = true;
+    bricksLeft++;
+  } // end of for each brick 
+} // end of brick reset
+
+function isBrickAtColRow(col, row) {
+  if (col >= 0 && col < BRICK_COLS &&
+    row >= 0 && row < brickRows) {
+    var brickIndexUnderCoord = rowColToArrayIndex(col, row);
+    return brickGrid[brickIndexUnderCoord];
+  } else {
+    return false;
+  }
+}
+
+function rowColToArrayIndex(col, row) {
+  return col + BRICK_COLS * row;
+}
+
+function drawBricks() {
+  for (var eachRow = 0; eachRow < brickRows; eachRow++) {
+    for (var eachCol = 0; eachCol < BRICK_COLS; eachCol++) {
+
+      var arrayIndex = rowColToArrayIndex(eachCol, eachRow);
+
+      if (brickGrid[arrayIndex]) {
+        colorRect(BRICK_W * eachCol, BRICK_H * eachRow, BRICK_W - BRICK_GAP, BRICK_H - BRICK_GAP, 'blue');
+      } //  end of is this brick here
+    } // end of for each cols
+  } // end of for each rows
+} // end of drawBricks()
+
+//BALL
+
+function ballMove() {
+  ballX += ballSpeedX;
+  ballY += ballSpeedY;
+
+  if (ballX < 10 && ballSpeedX < 0.0) { // left
+    ballSpeedX *= -1;
+
+  }
+  if (ballX > canvas.width - 10 && ballSpeedX > 0.0) { // right
+    ballSpeedX *= -1;
+
+  }
+  if (ballY < 0 && ballSpeedY < 0.0) { // top
+    ballSpeedY *= -1;
+
+  }
+  if (ballY > canvas.height) { // bottom
+    ballReset();
+    playerLives--;
+    if (playerLives < 0) {
+      showGameOverPopup(); // Show game over popup when lives are less than 0
+    }
+    if (playerLives <= -1) {
+      if (scoreMode) {
+        playerLives = 1;
+      } else {
+        playerLives = 3;
+      }
+      score = 0;
+      if (randomMode) {
+        randomBrickReset();
+      } else {
+        brickReset();
+      }
+    } // game reset when out of lives
+  } // ball passes below the screen
+} // end of ball move
+
+
+// Function to display game over popup
+function showGameOverPopup() {
+  isGameOver = true; // Set the game over flag to true
+  let popup = document.getElementById('gameOverPopup');
+  popup.innerHTML = `
+    <div style="background: white; padding: 20px; text-align: center; border-radius: 10px; color: black;">
+      <h1>Game Over</h1>
+      <p>Your Score: ${score}</p>
+      <button onclick="restartGame()" style="padding: 10px 20px;width: 300px; font-size: 16px; cursor: pointer;">Restart</button>
+    </div>`;
+  popup.style.display = 'flex'; // Show the popup
+}
+
+// Function to restart the game
+function restartGame() {
+  isGameOver = false; // Reset the game over flag
+  let popup = document.getElementById('gameOverPopup');
+  popup.style.display = 'none'; // Hide the popup
+  playerLives = 3; // Reset lives
+  score = 0; // Reset score
+  if (randomMode) {
+    randomBrickReset();
+  } else {
+    brickReset();
+  }
+  ballReset(); // Reset the ball
+}
+
+function ballBrickHandling() {
+  var ballBrickCol = Math.floor(ballX / BRICK_W);
+  var ballBrickRow = Math.floor(ballY / BRICK_H);
+  var brickIndexUnderBall = rowColToArrayIndex(ballBrickCol, ballBrickRow);
+
+  if (ballBrickCol >= 0 && ballBrickCol < BRICK_COLS &&
+    ballBrickRow >= 0 && ballBrickRow < brickRows) {
+
+    if (isBrickAtColRow(ballBrickCol, ballBrickRow)) {
+      brickGrid[brickIndexUnderBall] = false; // brick removal
+      ballHitPaddleLast = false;
+      if (ballHitPaddleLast == false) {
+        if (multiplier <= 9.5) {
+          pointPerBrick = 2 * Math.floor(multiplier);
+          multiplier += .5; // increase multiplier per brick hit after eachother without hitting paddle
+
+        } else if (multiplier == 10) {
+          playerLives++;
+        }
+      }
+      score += Math.floor(pointPerBrick);
+      bricksLeft--;
+
+      var prevBallX = ballX - ballSpeedX;
+      var prevBallY = ballY - ballSpeedY;
+      var prevBrickCol = Math.floor(prevBallX / BRICK_W);
+      var prevBrickRow = Math.floor(prevBallY / BRICK_H);
+
+      var bothTestsFailed = true;
+
+      if (prevBrickCol != ballBrickCol) {
+        if (isBrickAtColRow(prevBrickCol, ballBrickRow) == false) {
+          ballSpeedX *= -1;
+          bothTestsFailed = false;
+        }
+      }
+      if (prevBrickRow != ballBrickRow) {
+        if (isBrickAtColRow(ballBrickCol, prevBrickRow) == false) {
+          ballSpeedY *= -1;
+          bothTestsFailed = false;
+        }
+      }
+
+      if (bothTestsFailed) { // stops ball from passing through the corner of a L shape of bricks 
+        ballSpeedX *= -1;
+        ballSpeedY *= -1;
+      }
+    } // end of brick found
+  } // end of valid col and row
+} // end of ballBrickHandling func
+
+function ballPaddleHandling() {
+  var paddleTopEdgeY = canvas.height - PADDLE_DIST_FROM_EDGE;
+  var paddleBottomEdgeY = paddleTopEdgeY + PADDLE_THICKNESS;
+  var paddleLeftEdgeX = paddleX;
+  var paddleRightEdgeX = paddleLeftEdgeX + PADDLE_WIDTH;
+  if (ballY > paddleTopEdgeY && // below the top of paddle
+    ballY < paddleBottomEdgeY && // abovs bottom of paddle
+    ballX > paddleLeftEdgeX && // right of the left side of paddle
+    ballX < paddleRightEdgeX) { // left of the right side of paddle
+
+    // change score attack mode vars 
+    ballHitPaddleLast = true;
+    pointPerBrick = 2;
+    multiplier = 1;
+    ballSpeedY *= -1;
+    var centerOfPaddleX = paddleX + PADDLE_WIDTH / 2;
+    var ballDistFromPaddleCenterX = ballX - centerOfPaddleX;
+    ballSpeedX = ballDistFromPaddleCenterX * 0.35;
+
+    if (bricksLeft == 0) {
+      if (randomMode) {
+        randomBrickReset();
+      } else {
+        brickReset();
+      }
+    } // out of bricks
+  } // ball center inside paddle
+} // end of ball paddle handling
+
+function ballReset() {
+
+  ballX = canvas.width / 2
+  if (randomMode) {
+    ballY = canvas.height / 2 + 100
+  } else {
+    ballY = canvas.height / 2
+  }
+  ballSpeedX = 0;
+  ballSpeedY = 0;
+
+  if (aiMode) {
+    ballSpeedX = 1;
+    ballSpeedY = 5.5;
+  } else {
+    readyImg = true;
+  }
+
+  pointPerBrick = 1;
+  multiplier = 1;
+}
+
+////GAMEPLAY
+
+function aiOn() {
+  if (aiMode) {
+    aiMode = false;
+    ballReset();
+  } else {
+    aiMode = true;
+    readyImg = false;
+  }
+  ballReset();
+  paddleX = canvas.width / 2;
+}
+
+function ScoreAttack() {
+  if (scoreMode) {
+    scoreMode = false;
+    ballReset();
+    if (randomMode) {
+      randomBrickReset();
+    } else {
+      brickReset();
+    }
+    playerLives = 3;
+    score = 0;
+  } else {
+    scoreMode = true;
+    ballReset();
+    if (randomMode) {
+      randomBrickReset();
+    } else {
+      brickReset();
+    }
+    paddleX = canvas.width / 2;
+    playerLives = 1;
+    score = 0;
+  }
+} // end of scoreAttack()
+
+//MOVEMENT
+function computerMovement() {
+  paddleX += paddleSpeedX;
+  if (paddleX > ballX - 30) {
+    paddleSpeedX = -12; // AI speed to the left
+    paddleSpeedX -= -1.5;
+  } else if (paddleX + PADDLE_WIDTH < ballX + 30) {
+    paddleSpeedX = 12; // AI speed to the right
+    paddleSpeedX -=1.5;
+  } else {
+    paddleSpeedX = 0;
+  }
+}
+
+function moveAll() {
+  ballMove();
+  ballBrickHandling();
+  ballPaddleHandling();
+  if (aiMode) {
+    computerMovement();
+  } else {
+    return;
+  }
+}
+
+
+//DRAW
+function drawAll() {
+  canvas.width = window.innerWidth-50;
+  canvas.height = window.innerHeight-75;
+  PADDLE_WIDTH = canvas.width/10
+  BRICK_W = canvas.width/20;
+  BRICK_H = canvas.height/40;
+  
+  
+  colorRect(0, 0, canvas.width, canvas.height, 'black'); // clear screen
+  canvasContext.font = '10pt serif';
+  colorCirlce(ballX, ballY, 6, 'white'); // draw ball
+
+  colorRect(paddleX, canvas.height - PADDLE_DIST_FROM_EDGE,
+    PADDLE_WIDTH, PADDLE_THICKNESS, 'white');
+
+  drawBricks();
+  if (readyImg) {
+    colorText("Click when ready", canvas.width/2, canvas.height/2, 'white');
+  }
+  if (randomMode) { // displaying random mode is on
+    colorText("Random On", 60, canvas.height - 15, 'white')
+  }
+  if (aiMode) {
+    colorRect(0, canvas.height - 42, canvas.width, 15, 'rgb(150,0,0)')
+    colorText("AI Mode On", canvas.width / 2 - 35, canvas.height - 30, 'white')
+  }
+
+  if (scoreMode) { // display for score mode
+    colorText("Score: " + score, 10, 20, 'white')
+    colorText("Multiplier: " + "x" + Math.floor(multiplier), canvas.width - 90, 20, 'white')
+  }
+
+  // check if paddle hit ball for score mode and for combos
+  //colorText(ballHitPaddleLast, canvas.width/2, 20, 'white')
+  colorRect(18, canvas.height/1.05-20, 38,20, 'rgb(150,0,0)')
+  canvasContext.font = '15pt serif';
+  colorText("L: " + playerLives, 20, canvas.height/1.05, 'white')
+}
+
+function colorRect(topLeftX, topLeftY, boxWidth, boxHeight, fillColor) {
+  canvasContext.fillStyle = fillColor;
+  canvasContext.fillRect(topLeftX, topLeftY, boxWidth, boxHeight);
+}
+
+function colorCirlce(centerX, centerY, radius, fillColor) {
+  canvasContext.fillStyle = fillColor;
+  canvasContext.beginPath();
+  canvasContext.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+  canvasContext.fill();
+}
+
+function colorText(showWords, textX, textY, fillColor) {
+  canvasContext.fillStyle = fillColor;
+  canvasContext.fillText(showWords, textX, textY);
+}
+      </script>
+</body>
+</html>

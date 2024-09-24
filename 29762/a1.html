@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Brick Breaker Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #gameCanvas { border: 1px solid black; display: block; margin: 20px auto; }
+        .controls, .info { text-align: center; margin: 10px 0; }
+        button { margin: 5px; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="480" height="320"></canvas>
+    <div class="controls">
+        <button id="generateBoard">Generate Board</button>
+        <label><input type="checkbox" id="randomMode"> Random Bricks</label>
+        <label><input type="checkbox" id="aiMode"> AI Mode</label>
+        <label><input type="checkbox" id="scoreAttackMode"> Score Attack Mode</label>
+    </div>
+    <div class="info">
+        <span id="aiStatus"></span>
+        <span id="randomStatus"></span>
+        <span>Score: <span id="score">0</span></span>
+        <span>Lives: <span id="lives">3</span></span>
+    </div>
+
+    <script>
+    // Game initialization
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const ballRadius = 10;
+    let dx = 2, dy = -2;
+    let paddleHeight = 10, paddleWidth = 75;
+    let paddleX = (canvas.width - paddleWidth) / 2;
+    let rightPressed = false, leftPressed = false;
+    let bricks = [];
+    let brickRowCount = 5, brickColumnCount = 5, brickWidth = 75, brickHeight = 20, brickPadding = 10, brickOffsetTop = 30, brickOffsetLeft = 30;
+    let score = 0, lives = 3;
+    let isRandom = false, isAI = false, isScoreAttack = false;
+
+    function createBricks(random = false) {
+        bricks = [];
+        for(let c=0; c<brickColumnCount; c++) {
+            bricks[c] = [];
+            for(let r=0; r<brickRowCount; r++) {
+                if (!random || Math.random() > 0.3) { // 70% chance of brick existing in random mode
+                    bricks[c][r] = { x: 0, y: 0, status: 1 };
+                }
+            }
+        }
+    }
+
+    function drawBricks() {
+        for(let c=0; c<brickColumnCount; c++) {
+            for(let r=0; r<brickRowCount; r++) {
+                if(bricks[c][r].status === 1) {
+                    let brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;
+                    let brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
+                    bricks[c][r].x = brickX;
+                    bricks[c][r].y = brickY;
+                    ctx.beginPath();
+                    ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                    ctx.fillStyle = "#0095DD";
+                    ctx.fill();
+                    ctx.closePath();
+                }
+            }
+        }
+    }
+
+    function drawBall() {
+        ctx.beginPath();
+        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    function drawPaddle() {
+        ctx.beginPath();
+        ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fill();
+        ctx.closePath();
+    }
+
+    // ... [Additional functions for collision detection, AI movement, game loop, etc.]
+
+    // Event listeners for controls
+    document.getElementById('generateBoard').addEventListener('click', function() {
+        createBricks(document.getElementById('randomMode').checked);
+    });
+
+    document.getElementById('aiMode').addEventListener('change', function() {
+        isAI = this.checked;
+        document.getElementById('aiStatus').textContent = isAI ? 'AI Assist ON' : '';
+    });
+
+    document.getElementById('randomMode').addEventListener('change', function() {
+        document.getElementById('randomStatus').textContent = this.checked ? 'Random Bricks' : '';
+    });
+
+    document.getElementById('scoreAttackMode').addEventListener('change', function() {
+        isScoreAttack = this.checked;
+        if (isScoreAttack) lives = Math.floor(Math.random() * 3) + 1;
+        document.getElementById('lives').textContent = lives;
+    });
+
+    // Game loop would go here with draw and update functions
+    // AI logic for paddle movement would also be implemented
+
+    // Start the game loop
+    function gameLoop() {
+        // Game logic here
+        requestAnimationFrame(gameLoop);
+    }
+    gameLoop();
+
+    </script>
+</body>
+</html>
