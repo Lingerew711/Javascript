@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Puzzle Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #gameCanvas { border: 1px solid black; }
+        .controls { margin: 10px 0; }
+        .piece { position: absolute; cursor: move; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <select id="imageSelect"></select>
+        <button id="startGame">Start</button>
+        <button id="showOriginal">Show Original</button>
+        <button id="fullscreen">Go Fullscreen</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="timer"></div>
+
+    <script>
+    // Use CDN for jQuery for simplicity in DOM manipulation and events
+    const script = document.createElement('script');
+    script.src = 'https://code.jquery.com/jquery-3.6.0.min.js';
+    script.onload = function() {
+        $(document).ready(initGame);
+    };
+    document.head.appendChild(script);
+
+    function initGame() {
+        const canvas = $('#gameCanvas')[0];
+        const ctx = canvas.getContext('2d');
+        const images = [
+            'https://www.icalendar37.net/v/external_resources/4x6.jpg',
+            // Add other image URLs here
+        ];
+        let selectedImage, pieces = [], isDragging = false, startPos, currentPiece, timer, timeTaken;
+
+        // Populate image selection dropdown
+        images.forEach((src, index) => {
+            $('#imageSelect').append($('<option>', { value: index, text: `Image ${index + 1}` }));
+        });
+
+        // Setup game functions (init, start, draw, drag handlers, etc.)
+        function startGame() {
+            const imgIndex = $('#imageSelect').val();
+            selectedImage = new Image();
+            selectedImage.src = images[imgIndex];
+            selectedImage.onload = function() {
+                canvas.width = selectedImage.width;
+                canvas.height = selectedImage.height;
+                cutImageIntoPieces();
+                scatterPieces();
+                timer = setInterval(updateTimer, 1000);
+            };
+        }
+
+        function cutImageIntoPieces() {
+            // This function should implement image cutting into irregular pieces
+            // For simplicity, this example will not show actual cutting
+        }
+
+        function scatterPieces() {
+            pieces.forEach(piece => {
+                piece.x = Math.random() * (canvas.width - piece.width);
+                piece.y = Math.random() * (canvas.height - piece.height);
+            });
+            drawPieces();
+        }
+
+        function drawPieces() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pieces.forEach(piece => {
+                ctx.save();
+                ctx.translate(piece.x + piece.width / 2, piece.y + piece.height / 2);
+                ctx.rotate(piece.rotation);
+                ctx.drawImage(piece.img, -piece.width / 2, -piece.height / 2, piece.width, piece.height);
+                ctx.restore();
+            });
+        }
+
+        function updateTimer() {
+            timeTaken = (timeTaken || 0) + 1;
+            $('#timer').text('Time: ' + timeTaken + 's');
+        }
+
+        // Event listeners for buttons and mouse events
+        $('#startGame').on('click', startGame);
+        $('#showOriginal').on('click', () => ctx.drawImage(selectedImage, 0, 0));
+        // Add fullscreen functionality
+        $('#fullscreen').on('click', () => {
+            if (canvas.requestFullscreen) {
+                canvas.requestFullscreen();
+            } else if (canvas.mozRequestFullScreen) { /* Firefox */
+                canvas.mozRequestFullScreen();
+            } else if (canvas.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+                canvas.webkitRequestFullscreen();
+            } else if (canvas.msRequestFullscreen) { /* IE/Edge */
+                canvas.msRequestFullscreen();
+            }
+        });
+
+        // Drag and drop logic, rotation with double click
+        // This would involve setting up event handlers for mousedown, mousemove, mouseup, and dblclick
+        // ...
+
+        // Game logic for checking if puzzle is complete
+        // ...
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Puzzle Game</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #gameArea {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 2px solid black;
+        }
+        .piece { position: absolute; cursor: move; }
+        #originalImagePreview { position: absolute; top: 10px; right: 10px; display: none; }
+        #controls { margin-top: 10px; }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/konva@8.4.2/konva.min.js"></script>
+</head>
+<body>
+    <div id="gameArea"></div>
+    <div id="controls">
+        <select id="imageSelect"></select>
+        <button onclick="startGame()">Start</button>
+        <button onclick="showOriginal()">Show Original</button>
+        <button onclick="toggleFullScreen()">Toggle Fullscreen</button>
+        <span id="timer">Time: 0s</span>
+    </div>
+
+    <script>
+    let stage, layer, originalImage, pieces = [], timerInterval, timeElapsed = 0;
+
+    function loadImages() {
+        const images = [
+            '4x6.jpg', '2x2.jpg', '3x3.jpg', '4x4.jpg', '5x5.jpg', '7x5.jpg', '8x6.jpg'
+        ].map(name => `https://www.icalendar37.net/v/external_resources/${name}`);
+        const select = document.getElementById('imageSelect');
+        images.forEach(url => {
+            const option = document.createElement('option');
+            option.value = url;
+            option.text = url.split('/').pop();
+            select.appendChild(option);
+        });
+    }
+
+    function startGame() {
+        const imageUrl = document.getElementById('imageSelect').value;
+        const img = new Image();
+        img.onload = function() {
+            initPuzzle(img);
+            startTimer();
+            scatterPieces();
+        };
+        img.src = imageUrl;
+    }
+
+    function initPuzzle(img) {
+        stage = new Konva.Stage({
+            container: 'gameArea',
+            width: 800,
+            height: 600
+        });
+        layer = new Konva.Layer();
+        stage.add(layer);
+
+        originalImage = new Konva.Image({
+            image: img,
+            x: 100,
+            y: 100,
+            width: img.width,
+            height: img.height,
+            draggable: false
+        });
+        layer.add(originalImage);
+
+        // Here you would create puzzle pieces. This is a simplified version:
+        for(let i = 0; i < 4; i++) {
+            let piece = new Konva.Image({
+                image: img,
+                x: 100 + (i % 2) * (img.width / 2),
+                y: 100 + Math.floor(i / 2) * (img.height / 2),
+                width: img.width / 2,
+                height: img.height / 2,
+                draggable: true,
+                name: `piece-${i}`
+            });
+            piece.on('dblclick', function() {
+                this.rotate(90);
+                layer.draw();
+            });
+            pieces.push(piece);
+            layer.add(piece);
+        }
+        layer.draw();
+    }
+
+    function scatterPieces() {
+        pieces.forEach(piece => {
+            piece.position({
+                x: Math.random() * (stage.width() - piece.width()),
+                y: Math.random() * (stage.height() - piece.height())
+            });
+        });
+        layer.draw();
+    }
+
+    function startTimer() {
+        timeElapsed = 0;
+        timerInterval = setInterval(() => {
+            timeElapsed++;
+            document.getElementById('timer').textContent = `Time: ${timeElapsed}s`;
+        }, 1000);
+    }
+
+    function showOriginal() {
+        originalImage.visible(!originalImage.visible());
+        layer.draw();
+    }
+
+    function toggleFullScreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    loadImages();
+    </script>
+</body>
+</html>
