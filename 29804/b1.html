@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+    font-family: 'Roboto', sans-serif;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.game-container {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 80%;
+    max-width: 1000px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(15, 30px);
+    gap: 2px;
+    margin-bottom: 20px;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    background: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.cell:hover {
+    background: #d0d0d0;
+}
+
+.word-list {
+    display: flex;
+    justify-content: space-around;
+}
+
+.category {
+    flex: 1;
+    margin: 0 10px;
+}
+
+.category h3 {
+    color: #333;
+    border-bottom: 2px solid #4CAF50;
+}
+
+.word {
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.word.found {
+    text-decoration: line-through;
+    color: #888;
+}
+
+.selected {
+    border-color: #4CAF50;
+    background: #e8f5e9;
+}
+</style>
+</head>
+<body>
+
+<div class="game-container">
+    <div id="grid" class="grid"></div>
+    <div class="word-list">
+        <div class="category" id="fruits-veggies">
+            <h3>Fruits & Veggies</h3>
+        </div>
+        <div class="category" id="animals">
+            <h3>Animals</h3>
+        </div>
+        <div class="category" id="cities">
+            <h3>Cities</h3>
+        </div>
+    </div>
+</div>
+
+<script>
+// Game logic will be here
+document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.getElementById('grid');
+    const categories = {
+        'fruits-veggies': ['APPLE', 'BANANA', 'CARROT', /* ... other words ... */],
+        'animals': ['ELEPHANT', 'GIRAFFE', 'KANGAROO', /* ... */],
+        'cities': ['TOKYO', 'PARIS', 'LONDON', /* ... */]
+    };
+
+    let gridSize = 15; // Example size, should be adjusted based on total words
+    let cells = [];
+    let startCell = null;
+    let currentWord = '';
+
+    // Generate grid cells
+    for(let i = 0; i < gridSize * gridSize; i++) {
+        let cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = String.fromCharCode(65 + Math.floor(Math.random() * 26)); // Random letter
+        grid.appendChild(cell);
+        cells.push(cell);
+    }
+
+    // Place words in grid (this is simplified, real implementation would need word placement logic)
+    function placeWords() {
+        // Placeholder for word placement logic
+    }
+
+    placeWords();
+
+    // Event listeners for mouse interaction
+    grid.addEventListener('mousedown', (e) => {
+        if(e.target.classList.contains('cell')) {
+            startCell = e.target;
+            currentWord = startCell.textContent;
+            startCell.classList.add('selected');
+        }
+    });
+
+    grid.addEventListener('mousemove', (e) => {
+        if(startCell && e.target.classList.contains('cell') && e.target !== startCell) {
+            // Simple direction check (needs refinement for diagonal, etc.)
+            if(e.target.offsetLeft === startCell.offsetLeft || e.target.offsetTop === startCell.offsetTop) {
+                e.target.classList.add('selected');
+                currentWord += e.target.textContent;
+            }
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        if(startCell) {
+            checkWord(currentWord);
+            cells.forEach(cell => cell.classList.remove('selected'));
+            startCell = null;
+            currentWord = '';
+        }
+    });
+
+    function checkWord(word) {
+        for(let cat in categories) {
+            if(categories[cat].includes(word)) {
+                document.querySelector(`#${cat} .word:contains(${word})`).classList.add('found');
+                break;
+            }
+        }
+    }
+
+    // Populate word lists
+    for(let cat in categories) {
+        categories[cat].forEach(word => {
+            let wordElement = document.createElement('div');
+            wordElement.textContent = word;
+            wordElement.className = 'word';
+            document.getElementById(cat).appendChild(wordElement);
+        });
+    }
+});
+</script>
+
+</body>
+</html>

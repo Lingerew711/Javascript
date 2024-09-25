@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Word Search Game</title>
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    .game-container {
+        max-width: 800px;
+        margin: auto;
+        text-align: center;
+    }
+    .word-grid {
+        display: inline-block;
+        border: 2px solid #333;
+        margin-top: 20px;
+    }
+    .letter {
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        display: inline-block;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        user-select: none;
+    }
+    .word-list {
+        margin-top: 20px;
+    }
+    .word-found {
+        text-decoration: line-through;
+        color: #888;
+    }
+    .highlight {
+        background-color: yellow;
+        border: 1px solid orange;
+    }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+    <h1>Word Search Puzzle</h1>
+    <select id="categorySelect">
+        <option value="fruits">Fruits and Veggies</option>
+        <option value="animals">Animals</option>
+        <option value="cities">Cities</option>
+    </select>
+    <div id="wordGrid" class="word-grid"></div>
+    <div id="wordList" class="word-list"></div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const categories = {
+        fruits: ['APPLE', 'BANANA', 'CARROT', 'DATE', 'ELDERBERRY', 'FIG', 'GRAPE', 'HONEYDEW', 'KIWI'],
+        animals: ['BEAR', 'CAT', 'DOG', 'EAGLE', 'FISH', 'GOAT', 'HORSE', 'IGUANA', 'JAGUAR'],
+        cities: ['PARIS', 'TOKYO', 'LONDON', 'ROME', 'CAIRO', 'DELHI', 'OSLO', 'NAIROBI', 'BERLIN']
+    };
+
+    let currentCategory = 'fruits';
+    let gridSize = 15; // Assuming a 15x15 grid for 27 words
+    let grid = [];
+    let selectedPath = [];
+
+    function generateGrid() {
+        grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+        // Place words in grid (This is a simplified version; you'll need a more complex logic)
+        // Fill remaining with random letters
+        for(let y = 0; y < gridSize; y++) {
+            for(let x = 0; x < gridSize; x++) {
+                if(grid[y][x] === '') grid[y][x] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            }
+        }
+        renderGrid();
+        renderWordList();
+    }
+
+    function renderGrid() {
+        let gridHTML = '';
+        for(let y = 0; y < gridSize; y++) {
+            for(let x = 0; x < gridSize; x++) {
+                gridHTML += `<div class="letter" data-x="${x}" data-y="${y}">${grid[y][x]}</div>`;
+            }
+        }
+        document.getElementById('wordGrid').innerHTML = gridHTML;
+    }
+
+    function renderWordList() {
+        const wordListHTML = categories[currentCategory].map(word => `<div>${word}</div>`).join('');
+        document.getElementById('wordList').innerHTML = wordListHTML;
+    }
+
+    function highlightPath(start, end) {
+        // Simplified: actual logic would check direction and continuity
+        for(let i = Math.min(start.x, end.x); i <= Math.max(start.x, end.x); i++) {
+            for(let j = Math.min(start.y, end.y); j <= Math.max(start.y, end.y); j++) {
+                document.querySelector(`[data-x="${i}"][data-y="${j}"]`).classList.add('highlight');
+            }
+        }
+    }
+
+    let startCell = null;
+    document.getElementById('wordGrid').addEventListener('mousedown', function(e) {
+        if(e.target.classList.contains('letter')) {
+            startCell = {x: parseInt(e.target.dataset.x), y: parseInt(e.target.dataset.y)};
+            selectedPath = [startCell];
+            e.target.classList.add('highlight');
+        }
+    });
+
+    document.getElementById('wordGrid').addEventListener('mousemove', function(e) {
+        if(startCell && e.target.classList.contains('letter')) {
+            let currentCell = {x: parseInt(e.target.dataset.x), y: parseInt(e.target.dataset.y)};
+            if(!selectedPath.some(cell => cell.x === currentCell.x && cell.y === currentCell.y)) {
+                selectedPath.push(currentCell);
+                highlightPath(startCell, currentCell);
+            }
+        }
+    });
+
+    document.addEventListener('mouseup', function() {
+        if(startCell) {
+            const word = selectedPath.map(cell => grid[cell.y][cell.x]).join('');
+            if(categories[currentCategory].includes(word)) {
+                // Mark word as found
+                document.querySelectorAll('#wordList div').forEach(div => {
+                    if(div.textContent === word) div.classList.add('word-found');
+                });
+            }
+            // Clear highlights
+            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+            selectedPath = [];
+            startCell = null;
+        }
+    });
+
+    document.getElementById('categorySelect').addEventListener('change', function(e) {
+        currentCategory = e.target.value;
+        generateGrid();
+    });
+
+    generateGrid();
+});
+</script>
+
+</body>
+</html>

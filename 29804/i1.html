@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  	<meta charset="utf-8">
+  	<title>Word Search</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500&display=swap" rel="stylesheet">
+    <style>
+        * {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	-moz-box-sizing: border-box;
+  font-family: 'Roboto', sans-serif;
+  text-align: center;
+}
+
+body {
+  background: #fde6a8;
+}
+
+#main {
+	width: 70em;
+	margin: 10px auto;
+	display: block;
+  display: none;
+}
+
+h1 {  
+  margin-top: 2.5%;
+  margin-bottom: 2%;
+  color: #f2a133;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+}
+
+h2 {
+  margin-bottom: 1%;
+}
+
+.left-div {
+	float: left;
+	width: 810px;
+	height: auto;
+	border: 5px solid #f2a133;
+}
+
+.letters {
+	font-size: 1.3em;
+	font-family: 'Roboto', sans-serif;
+}
+
+.letters span {
+	float:left;
+	width: 40px;
+	height: 40px;
+	background: white;
+	line-height: 50px;
+	text-align: center;
+	font-size: 1em;
+}
+
+.right-div {
+	float: right;
+	width: 210px;
+	height: auto;
+	border: 5px solid #f2a133;
+  background-color: #f2a133;
+}
+
+.words {
+	font-size: 1.3em;
+	font-family: 'Roboto', sans-serif;
+}
+
+.words span {
+	float:left;
+	width: 200px;
+	height: 40px;
+	background: #f2a133;
+	line-height: 45px;
+	text-align: center;
+  color: white;
+  margin-bottom: 1%;
+}
+
+.strike {
+  text-decoration: line-through;
+}
+
+canvas {
+	position: absolute;
+	display: block;
+	float: left;
+}
+
+button {
+  border: none;
+}
+
+button:hover {
+  cursor: pointer;
+  background-color:#fde6a8; 
+}
+
+#themes {
+  width: 80%;
+  margin-left: 10%;
+}
+
+.theme {
+  width: 30%;
+  margin-top: 0.5%;
+  margin-bottom: 0.5%;
+  padding-top: 2%;
+  padding-bottom: 2%;
+}
+
+.theme:hover {
+  border: 2px solid #f2a133;
+  background: white;
+}
+
+.puzzleButton {
+  width: 90%;
+  padding: 2%;
+  margin-top: 2%;
+  margin-bottom: 2%;
+}
+
+.modal {
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+#playbtn{
+    color: #fff;
+    background-color: #f2a133;
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+    </style>
+</head>
+<body>
+    <div id="winModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Congratulations! You've found all the words!</h2>
+            <button id="playbtn" onclick="playAgain()">Play Again</button>
+        </div>
+    </div>
+    
+  <h1>Word Search</h1>
+  <div id = "on-load">
+    <h2>Select a Theme: </h2>  
+    <div id = "themes">
+      <button onclick = load(this.id) class = "theme" id = "fruitsAndVeggies">Fruits & Veggies</button><br>
+      <button onclick = load(this.id) class = "theme" id = "animals">Animals</button><br>
+      <button onclick = load(this.id) class = "theme" id = "cities">Cities</button>
+    </div>
+    
+  </div>
+	<div id="main">
+		<div class="left-div">
+      <div class="letters">
+        <canvas id="a" width="800" height="800"></canvas>
+        <canvas id="c" width="800" height="800"></canvas>
+      </div>
+    </div>
+    <div class="right-div">
+      <div class="words">
+      </div>
+      <!--<button class = "puzzleButton" onclick = reset()>Reset</button>
+      <button class = "puzzleButton" onclick = show()>Show</button>-->
+  	</div>
+  </div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script>
+
+var pos = [];
+var click = { "startPos": "", "endPos": "" };
+var letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", 
+               "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", 
+               "Y", "Z"];
+var words = [];
+
+function load(theme) {
+	var size = 220; 
+	for (var i = 0; i < size; i++) {
+		$(".letters").append("<span class='" + (i + 1) + "'>" + getRandomLetter() + "</span>"); 
+  }
+  
+  if(theme == 'fruitsAndVeggies') {
+    console.log("Fruits & Veggies was clicked.");
+    words = [ { "word": "APPLE",       "direction": "S",  "start":   3 },
+			        { "word": "BANANA",      "direction": "SE", "start":  15 },
+			        { "word": "CAULIFLOWER", "direction": "NE", "start": 203 },
+			        { "word": "CANTELOUPE",  "direction": "E",  "start": 203 },
+			        { "word": "ORANGE",      "direction": "N",  "start": 201 },
+			        { "word": "BROCCOLI",    "direction": "E",  "start": 132 },
+			        { "word": "CARROT",      "direction": "E",  "start":  66 },
+			        { "word": "MANGO",       "direction": "N",  "start": 217 },
+			        { "word": "ASPARAGUS",   "direction": "W",  "start": 172 } ];
+  }
+
+  if(theme == 'cities') {
+    console.log("Cities was clicked.");
+    words = [ { "word": "CHARLOTTE", "direction": "S",  "start":   3 },
+			        { "word": "HOUSTON",   "direction": "SE", "start":  14 },
+			        { "word": "DALLAS",    "direction": "NE", "start": 184 },
+			        { "word": "CHICAGO",   "direction": "E",  "start": 204 },
+			        { "word": "PHOENIX",   "direction": "N",  "start": 201 },
+			        { "word": "BALTIMORE", "direction": "S",  "start":  12 },
+			        { "word": "BOSTON",    "direction": "E",  "start":  66 },
+			        { "word": "SEATTLE",   "direction": "N",  "start": 217 },
+			        { "word": "DENVER",    "direction": "W",  "start": 193 } ];
+  }
+
+  if(theme == 'animals') {
+    console.log("Animals was clicked.");
+    words = [ { "word": "BEAR",    "direction": "S",  "start":   3 },
+			        { "word": "IGUANA",  "direction": "SE", "start":  15 },
+			        { "word": "DOLPHIN", "direction": "NE", "start": 184 },
+			        { "word": "SHEEP",   "direction": "E",  "start": 203 },
+			        { "word": "GOAT",    "direction": "N",  "start": 201 },
+			        { "word": "SNAKE",   "direction": "E",  "start": 132 },
+			        { "word": "BIRD",    "direction": "E",  "start":  66 },
+			        { "word": "HORSE",   "direction": "N",  "start": 217 },
+			        { "word": "GIRAFFE", "direction": "W",  "start": 172 } ];
+  }
+  	  
+  for (var i = 0; i < words.length; i++) { //for the length of the words array
+		words[i].end = words[i].start;
+		displayWord(words[i]); //display each word  
+		pos[i] = { "start": words[i].start, "end": words[i].end };
+		$(".words").append("<span class='" + (i) + "'>" + words[i].word + "</span>");	}
+
+	$("#menu").on("mouseup", function() {
+		$(this).css( {"display": "none"})
+		$("#main").slideDown("slow", function() {
+		})
+	});
+  
+  document.getElementById('on-load').style.display = "none";
+  document.getElementById('main').style.display = "block";
+} //end of load() function
+
+function getRandomLetter() {
+	return letters[Math.floor(Math.random() * letters.length)];
+}
+
+
+var modal = document.getElementById("winModal");
+var span = document.getElementsByClassName("close")[0];
+
+span.onclick = function() {
+    modal.style.display = "none";
+}
+
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
+
+//displays word in the puzzle
+function displayWord(w) { 
+	for (var j = 0; j < w.word.length; j++){ //for the length of the word:
+		if (w.direction == "N") { //if word's direction is set to North:
+			$(".letters").find("." + w.end).text(w.word[j]);
+      //if there isn't room for the word, move end point down a row
+			if (j + 1 != w.word.length) w.end -= 20;
+		}
+		if (w.direction == "NE") {
+			$(".letters").find("." + w.end).text(w.word[j]);
+			if (j + 1 != w.word.length) w.end -= 19;
+		}
+		if (w.direction == "E") {
+			$(".letters").find("." + w.end).text(w.word[j]);
+			if (j + 1 != w.word.length) w.end += 1;
+		}
+		if (w.direction == "SE") {
+			$(".letters").find("." + w.end).text(w.word[j]);
+			if (j + 1 != w.word.length) w.end += 21;
+		}
+		if (w.direction == "S") {
+			$(".letters").find("." + w.end).text(w.word[j]);
+			if (j + 1 != w.word.length) w.end += 20;
+		}
+		if (w.direction == "SW") {
+			$(".letters").find("." + w.end).text(w.word[j]);
+			if (j + 1 != w.word.length) w.end += 19;
+		}
+		if (w.direction == "W") {
+			$(".letters").find("." + w.end).text(w.word[j]);
+			if (j + 1 != w.word.length) w.end -= 1;
+		}
+		if (w.direction == "NW") {
+			$(".letters").find("." + w.end).text(w.word[j]);
+			if (j + 1 != w.word.length) w.end -= 21;
+		}
+	}
+}
+
+// start of x & y, end of x & y.  
+var sX, sY, eX, eY, canvas, ctx, height, width, diff;
+var r = 14;
+var n = Math.sqrt((r * r) / 2);
+var strokeColor = "#f2a133";
+var isMouseDown = false;
+var mouseMoved = false;
+
+$(document).ready(function() {
+	$("#c").on("mousedown mouseup mousemove mouseleave", function(e) {
+		e.preventDefault();
+		//console.log(e);
+		if (e.type == "mousedown") {
+			setCanvas("c");			
+			isMouseDown = true;
+      
+      // Used for Firefox
+			sX = e.offsetX || e.clientX - $(e.target).offset().left;
+			sY = e.offsetY || e.clientY - $(e.target).offset().top;
+			// adjust the center of the arc 
+			sX -= (sX % 20);
+			sY -= (sY % 20);
+			if (!(sX % 40)) sX += 20;
+			if (!(sY % 40)) sY += 20;
+
+			setPos(sX, sY, "start");
+			draw(e.type);
+		} 
+		else if (e.type == "mousemove") {
+			if (isMouseDown) {
+				mouseMoved = true;
+				eX = e.offsetX || e.clientX - $(e.target).offset().left;
+				eY = e.offsetY || e.clientY - $(e.target).offset().top;
+				draw(e.type);
+			}
+		} 
+		else if (e.type == "mouseup") {
+			isMouseDown = false;
+			ctx.clearRect(0, 0, width, height);
+			if (mouseMoved) {
+				mouseMoved = false;
+
+				eX -= eX % 20;
+				eY -= eY % 20;
+				if (!(eX % 40)) eX += 20;
+				if (!(eY % 40)) eY += 20;
+
+				// draw the last line and clear the canvas to check and see if its the 
+				// correct word
+				draw(e.type);
+				ctx.clearRect(0, 0, width, height);
+				// if a correct word has been highlighted change the canvas to 
+				// the permanent one and redraw the arcs and lines.  Then scratch the 
+				// word on the right.
+				if (checkWord()) {
+					setCanvas("a");
+					draw(e.type);
+					scratchWord();
+					// Check if the game is over
+					if(isEndOfGame()) {
+						alert("Good job!");
+					}
+				}
+
+			}
+		} 
+		else if (e.type == "mouseleave") {
+			isMouseDown = false;
+			draw(e.type);
+		}
+
+	});
+})
+
+// This function is called when lines need to be drawn on the game
+function draw(f) {
+	// used to draw an arc.  takes in two numbers that represent the beginning
+	// and end of the arc
+	function drawArc(xArc, yArc, num1, num2) {
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.arc(xArc, yArc, r, num1 * Math.PI, num2 * Math.PI);
+		ctx.strokeStyle = strokeColor;
+		ctx.stroke();
+	}
+
+	// used to draw the two lines around letters
+	function drawLines(mX1, mY1, lX1, lY1, mX2, mY2, lX2, lY2) {
+		ctx.beginPath();
+		ctx.moveTo(mX1, mY1);
+		ctx.lineTo(lX1, lY1);
+		ctx.moveTo(mX2, mY2);
+		ctx.lineTo(lX2, lY2);
+		ctx.stroke();
+	}
+	// Check and see what event occured and create the action that belongs to that 
+	// event.
+	if (f == "mousedown"){
+		ctx.clearRect(0, 0, width, height);
+		drawArc(sX, sY, 0, 2);
+	}
+	else if (f == "mousemove" || f == "mouseup") {
+		/* 
+		This is to show the rise over run used to get the limits for 
+		all eight directions.  This tells the conditionals when to activiate
+		the lines and in which direction.
+		rise = (sY - eY) * Math.sqrt(6);
+		run = sX - eX;
+		 */	  
+		limit = ((sY - eY) * Math.sqrt(6)) / (sX - eX);
+		// UP
+		if ((limit > 6 || limit < -6) && eY < sY) {
+			// clear the canvas
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			drawArc(sX, sY, 0, 1); // draw bottom arc
+			drawArc(sX, eY, 1, 2); // draw top arc
+
+			// draw the two lines that connect the bottom and the top arcs
+			drawLines(sX + r, sY, sX + r, eY, sX - r, sY, sX -r, eY);	
+
+			// if the player is selecting this as the last letter set its position 
+			// for wordcheck
+			if (f == "mouseup") setPos(sX, eY, "end");	
+		}
+		// DOWN
+		if ((limit < -6 || limit > 6) && eY > sY) {
+			// clear the canvas
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			drawArc(sX, sY, 1, 2); 
+			drawArc(sX, eY, 0, 1); 
+			drawLines(sX + r, sY, sX + r, eY, sX - r, sY, sX -r, eY);
+			if (f == "mouseup") setPos(sX, eY, "end");		
+		}				
+		// LEFT
+		if ((limit < 1 && limit > -1) && eX < sX) {
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			drawArc(sX, sY, 1.5, 0.5);
+			drawArc(eX, sY, 0.5, 1.5);
+			drawLines(sX, sY - r, eX, sY -r, sX, sY + r, eX, sY + r);
+			if (f == "mouseup") setPos(eX, sY, "end");
+		}	
+		// RIGHT
+		if ((limit < 1 && limit > -1) && eX > sX) {
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			drawArc(sX, sY, 0.5, 1.5);
+			drawArc(eX, sY, 1.5, 0.5);
+			drawLines(sX, sY - r, eX, sY -r, sX, sY + r, eX, sY + r);
+			if (f == "mouseup") setPos(eX, sY, "end");
+		}
+		/* 
+		This is for the NW diagonal lines it requires a special number 
+		n that is the adjacent lengths of a 45-45-90 triangle needed to draw these
+		lines.  It also creates a diff for the difference between the 
+		start and the end of the arcs 
+		*/
+		// NW
+		if ((limit > 1 && limit < 6) && (eX < sX && eY < sY)) {
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			diff = sX - eX;
+			drawArc(sX, sY, 1.75, 0.75);
+			drawArc(sX - diff, sY - diff, 0.75, 1.75);
+			drawLines(sX + n, sY - n, sX + n - diff, sY - n - diff, 
+					  sX - n, sY + n, sX - n - diff, sY + n - diff);
+			if (f == "mouseup") setPos(sX - diff, sY - diff, "end");
+		} 
+
+		// NE
+		if ((limit < -1 && limit > -6) && (eX > sX && eY < sY)) {
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			diff = sX - eX;
+			drawArc(sX, sY, 0.25, 1.25);
+			drawArc(sX - diff, sY + diff, 1.25, 0.25);
+			drawLines(sX + n, sY + n, sX + n - diff, sY + n + diff, 
+					  sX - n, sY - n, sX - n - diff, sY - n + diff);
+			if (f == "mouseup") setPos(sX - diff, sY + diff, "end");
+		} 
+		// SW
+		if ((limit < -1 && limit > -6) && (eX < sX && eY > sY)) {
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			diff = sX - eX;
+			drawArc(sX, sY, 1.25, 0.25);
+			drawArc(sX - diff, sY + diff, 0.25, 1.25);
+			drawLines(sX + n, sY + n, sX + n - diff, sY + n + diff, 
+					  sX - n, sY - n, sX - n - diff, sY - n + diff);
+			if (f == "mouseup") setPos(sX - diff, sY + diff, "end");
+		} 
+		// SE
+		if ((limit > 1 && limit < 6) && (eX > sX && eY > sY)) {
+			if (f == "mousemove") ctx.clearRect(0, 0, width, height);
+			diff = sX - eX;
+			drawArc(sX, sY, 0.75, 1.75);
+			drawArc(sX - diff, sY - diff, 1.75, 0.75);
+			drawLines(sX + n, sY - n, sX + n - diff, sY - n - diff, 
+					  sX - n, sY + n, sX - n - diff, sY + n - diff);
+			if (f == "mouseup") setPos(sX - diff, sY - diff, "end");
+		} 
+	}
+
+	else if (f == "mouseleave") {
+		setCanvas("c");
+		ctx.clearRect(0,0,width,height);
+	}
+}
+
+
+// change the canvas between the bottom and top layer
+function setCanvas(id) {
+	canvas = document.getElementById(id);
+	ctx = canvas.getContext("2d");
+	width = canvas.width;
+	height = canvas.height;
+}
+
+
+// set the offsets to numbers that match the class names of each letter
+function setPos(x, y, loc) {
+	tX = Math.floor((x / 8) / 5 ) + 1;
+	tY = Math.floor((y / 8) / 5 ) + 1;
+	if (loc == "start") click.startPos = (tY - 1) * 20 + tX;
+	else click.endPos = (tY - 1) * 20 + tX;
+}
+
+
+// verify if the word chosen is the correct one. If a player decides
+// to highlight a word starting from last letter to first this function
+// will also support that ability
+function checkWord() {
+	// clears the pos array so that a player cannot highlight the same word twice
+	function clearPos(p) {
+		p.start = p.end = 0;
+		return true;
+	}
+	// user highlights from first letter to last
+	if (pos.some(function(o) { return o.start === click.startPos &&
+							   o.end === click.endPos && clearPos(o); })) {
+		return true;
+	}
+	// if user highlights from last letter to first
+	else if (pos.some(function(o) { return o.start === click.endPos &&
+									o.end === click.startPos && clearPos(o); })) {
+		return true;
+	}
+	else return false;
+}
+
+// scratch the word on the right out when the word is found on the left
+function scratchWord() {
+	for (var i = 0; i < words.length; i++) {
+		if ((click.startPos === words[i].start && click.endPos === words[i].end) ||
+			(click.startPos === words[i].end && click.endPos === words[i].start)) {
+			// little hack here
+			$(".words").find("." + i).addClass("strike");		
+		}}
+}
+
+function isEndOfGame(){
+	if(pos.every(function(o) { return o.start === 0 && o.end === 0; })){
+        document.getElementById('winModal').style.display = 'block';
+    }
+}
+
+function playAgain() {
+    reset(); // This will reset the game
+    document.getElementById('winModal').style.display = 'none'; // Close the modal
+}
+
+
+function reset(){
+  var puzzle = document.getElementById("main");
+  document.getElementById("on-load").style.display = "block";
+  puzzle.style.display = "none";
+}
+
+function show(){}
+
+  </script>
+</body>
+</html>
