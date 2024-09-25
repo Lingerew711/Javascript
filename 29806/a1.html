@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Bubble Shooter</title>
+<style>
+    #gameArea {
+        position: relative;
+        width: 800px;
+        height: 600px;
+        background: #f0f0f0;
+        margin: 20px auto;
+        overflow: hidden;
+    }
+    #gameOverModal {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+    canvas {
+        display: block;
+        margin: 0 auto;
+    }
+</style>
+</head>
+<body>
+<div id="gameArea">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="gameOverModal">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="scoreDisplay">0</span></p>
+        <button onclick="restartGame()">Restart</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.3.1/fabric.min.js"></script>
+<script>
+    const canvas = new fabric.Canvas('gameCanvas');
+    let bubbles = [], shooter, currentBubble, score = 0, rowsAdded = 0;
+
+    function setupGame() {
+        shooter = new fabric.Circle({ 
+            radius: 20, 
+            fill: 'green', 
+            left: canvas.width / 2, 
+            top: canvas.height - 40,
+            originX: 'center', 
+            originY: 'center'
+        });
+        canvas.add(shooter);
+        setupControls();
+        createInitialBubbles();
+    }
+
+    function setupControls() {
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') shooter.left -= 10;
+            if (e.key === 'ArrowRight') shooter.left += 10;
+            if (e.code === 'Space') shootBubble();
+            canvas.renderAll();
+        });
+    }
+
+    function shootBubble() {
+        if (currentBubble) return;
+        currentBubble = new fabric.Circle({
+            radius: 20, fill: getRandomColor(), left: shooter.left, top: shooter.top, selectable: false
+        });
+        canvas.add(currentBubble);
+        let interval = setInterval(() => {
+            currentBubble.top -= 5;
+            if (collisionCheck(currentBubble) || currentBubble.top < 0) {
+                clearInterval(interval);
+                currentBubble.set({selectable: true});
+                checkForMatch(currentBubble);
+                currentBubble = null;
+                if (++rowsAdded % 4 === 0) addRowOfBubbles();
+            }
+            canvas.renderAll();
+        }, 30);
+    }
+
+    function collisionCheck(bubble) {
+        for (let b of bubbles) {
+            if (fabric.util.getDistance(bubble, b) < bubble.radius + b.radius) {
+                bubble.left = Math.round(bubble.left / 40) * 40; // Snap to grid
+                bubble.top = Math.round(bubble.top / 40) * 40;
+                bubbles.push(bubble);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function checkForMatch(bubble) {
+        let connected = [bubble], color = bubble.fill;
+        let toCheck = [bubble];
+        while (toCheck.length) {
+            let current = toCheck.pop();
+            for (let b of bubbles) {
+                if (b.fill === color && fabric.util.getDistance(current, b) < 40) {
+                    if (!connected.includes(b)) {
+                        connected.push(b);
+                        toCheck.push(b);
+                    }
+                }
+            }
+        }
+        if (connected.length >= 3) {
+            connected.forEach(b => {
+                canvas.remove(b);
+                bubbles.splice(bubbles.indexOf(b), 1);
+            });
+            score += connected.length;
+            updateScore();
+        }
+    }
+
+    function addRowOfBubbles() {
+        for (let i = 0; i < 20; i++) {
+            let newBubble = new fabric.Circle({
+                radius: 20, fill: getRandomColor(), left: i * 40, top: 0, selectable: false
+            });
+            canvas.add(newBubble);
+            bubbles.push(newBubble);
+        }
+    }
+
+    function createInitialBubbles() {
+        for (let j = 0; j < 2; j++) addRowOfBubbles();
+    }
+
+    function getRandomColor() {
+        const colors = ['red', 'blue', 'yellow', 'purple', 'orange'];
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function updateScore() {
+        document.getElementById('scoreDisplay').innerText = score;
+    }
+
+    function gameOver() {
+        document.getElementById('gameOverModal').style.display = 'block';
+        canvas.dispose();
+    }
+
+    function restartGame() {
+        canvas.clear();
+        document.getElementById('gameOverModal').style.display = 'none';
+        score = 0;
+        rowsAdded = 0;
+        bubbles = [];
+        setupGame();
+    }
+
+    setupGame();
+    canvas.on('after:render', function() {
+        if (bubbles.some(b => b.top + b.radius >= canvas.height - 40)) gameOver();
+    });
+</script>
+</body>
+</html>

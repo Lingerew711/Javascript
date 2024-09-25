@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bubble Shooter</title>
+</head>
+<body>
+<script>
+"use strict";
+
+//  #region DOM elements
+document.body.style.margin = "0";
+document.body.style.height = "100vh";
+document.body.style.display = "flex";
+document.body.style.overflow = "hidden";
+document.body.style.alignItems = "center";
+document.body.style.justifyContent = "center";
+document.body.style.backgroundColor = "black";
+
+const canvas = document.createElement("canvas");
+canvas.width = 800;
+canvas.height = 600;
+canvas.style.backgroundColor = "white";
+document.body.appendChild(canvas);
+
+const rotatable = document.createElement("canvas");
+rotatable.width = 40;
+rotatable.height = 45;
+rotatable.style.position = "absolute";
+rotatable.style.left = (canvas.offsetLeft + canvas.width / 2 - rotatable.width / 2) + 'px';
+rotatable.style.bottom = '105px'; // Adjust this based on your bubble launcher's position
+document.body.appendChild(rotatable);
+//  #endregion
+
+//  #region global variables
+const ctx = canvas.getContext("2d"); // onscreen
+
+//  absolute canvas for player that gets rotated
+const rotatableCtx = rotatable.getContext("2d");
+
+// offscreen, canvas elements that seldom change
+const offscreen = new OffscreenCanvas(800, 600);
+const offscreenCtx = offscreen.getContext("2d");
+let offscreenSketch;
+
+let player = {
+  angle: 0,
+  rotate() {
+    rotatable.style.transformOrigin = "20px 45px";
+    rotatable.style.transform = "rotate(" + player.angle + "deg)";
+  }
+};
+
+const keys = this.keys || [];
+this.onkeydown = (e) => (keys[e.code] = true);
+this.onkeyup = (e) => (keys[e.code] = false);
+
+const bulletSpeed = 10;
+const bullets = [];
+let bubbles = [];
+
+let uneven = true;
+let playing = true;
+
+let bubblesUsed = 0;
+let score = 0;
+//  #endregion
+
+//  #region global functions
+window.onload = function () {
+  create();
+  sketch();
+  render();
+};
+
+function create() {
+  createBubbles();
+
+  function createBubbles() {
+    let x = 25;
+    let y = 25;
+    let bubblesPerRow = 16;
+    for (let i = 0; i < 1; i++) {
+      for (let j = 0, l = bubblesPerRow; j < l; j++) {
+        bubbles.push({ x, y, color: randomColor(), checked: false });
+        x += 50;
+      }
+      uneven ? (bubblesPerRow = 17) : (bubblesPerRow = 16);
+      uneven ? (x = 0) : (x = 25);
+      uneven ? (uneven = false) : (uneven = true);
+      y += 45;
+    }
+  }
+}
+
+function sketch() {
+  rotatableCtx.clearRect(0, 0, rotatable.width, rotatable.height);
+  offscreenCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+
+  sketchPlayer();
+  sketchBullet();
+  sketchBubbles();
+
+  function sketchPlayer() {
+    rotatableCtx.beginPath();
+    rotatableCtx.moveTo(20, 0);
+    rotatableCtx.lineTo(30, 20);
+    rotatableCtx.arcTo(20, 10, 10, 20, 25);
+    rotatableCtx.lineTo(10, 20);
+    rotatableCtx.closePath();
+
+    rotatableCtx.fillStyle = "black";
+    rotatableCtx.fill();
+  }
+
+  function sketchBullet() {
+    if (bullets.length) {
+      offscreenCtx.beginPath();
+      offscreenCtx.arc(
+        bullets[0].x,
+        bullets[0].y,
+        bullets[0].r,
+        0,
+        Math.PI * 2
+      );
+      offscreenCtx.closePath();
+
+      offscreenCtx.fillStyle = bullets[0].color;
+      offscreenCtx.fill();
+      offscreenCtx.stroke();
+    }
+  }
+
+  function sketchBubbles() {
+    for (let i = 0, l = bubbles.length; i < l; i++) {
+      const b = bubbles[i];
+      offscreenCtx.beginPath();
+      offscreenCtx.arc(b.x, b.y, 25, 0, Math.PI * 2);
+      offscreenCtx.closePath();
+
+      offscreenCtx.fillStyle = b.color;
+      offscreenCtx.fill();
+      offscreenCtx.stroke();
+    }
+  }
+
+  offscreenSketch = offscreenCtx.getImageData(
+    0,
+    0,
+    offscreen.width,
+    offscreen.height
+  );
+}
+
+function render() {
+  if (playing) {
+    requestAnimationFrame(render);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.putImageData(offscreenSketch, 0, 0);
+    loadAndShoot();
+    renderScore();
+    checkDefeat();
+    keyHandler();
+  } else {
+    gameOver();
+  }
+}
+
+function loadAndShoot() {
+  if (!bullets.length) {
+    let bullet = {
+      x: 400,
+      y: 600,
+      color: randomColor(),
+      checked: false,
+      live: false,
+      direction: player.angle
+    };
+    bullets.push(bullet);
+  } else {
+    let b = bullets[0];
+
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, 25, 0, Math.PI * 2);
+    ctx.closePath();
+
+    ctx.fillStyle = b.color;
+    ctx.fill();
+    ctx.stroke();
+
+    if (b.live) {
+      b.x += bulletSpeed * Math.sin((b.direction * Math.PI) / 180);
+      b.y -= bulletSpeed * Math.cos((b.direction * Math.PI) / 180);
+
+      if (b.y < 0 || b.x < 0 || b.x > 800) bullets.pop();
+
+      let collision = false;
+      let matches = 0;
+
+      bubbleCompare(b);
+
+      function bubbleCompare(source) {
+        for (let i = bubbles.length - 1; i >= 0; i--) {
+          const bubble = bubbles[i];
+
+          let dx = source.x - bubble.x;
+          let dy = source.y - bubble.y;
+
+          let distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance <= 52) {
+            collision = true;
+
+            if (source.color === bubble.color && !bubble.checked) {
+              matches++;
+              bubble.checked = true;
+              bubbleCompare(bubble);
+            }
+          }
+        }
+      }
+
+      if (collision) {
+        if (matches <= 1) {
+          bubbles.forEach((bubble) => (bubble.checked = false));
+
+          bubbles.push(b);
+          sketch();
+
+          bullets.pop();
+        } else {
+          score += matches;
+          bubbles = bubbles.filter((bubble) => !bubble.checked);
+          bullets.pop();
+          sketch();
+        }
+
+        bubblesUsed === 5 ? moveBubbles() : bubblesUsed++;
+      }
+    }
+  }
+}
+
+function randomColor() {
+  let colors = ["#FF6663", "#FDFD97", "#9EC1CF", "#FEB144", "#9EE09E", "#CC99C9"];
+  return colors[~~(Math.random() * colors.length)];
+}
+
+function moveBubbles() {
+  bubbles.forEach((bubble) => (bubble.y += 45));
+  uneven ? (uneven = false) : (uneven = true);
+
+  let x = 0;
+  let y = 25;
+  let amount = 0;
+
+  uneven ? (amount = 17) : (amount = 16);
+  uneven ? (x = 0) : (x = 25);
+
+  for (let j = 0, l = amount; j < l; j++) {
+    bubbles.unshift({ x, y, color: randomColor(), checked: false });
+    x += 50;
+  }
+
+  sketch();
+  bubblesUsed = 0;
+}
+
+function renderScore() {
+  ctx.beginPath();
+  ctx.font = "5rem Segoe UI light";
+  ctx.fillStyle = "grey";
+  ctx.fillText(score, 20, 580);
+  ctx.closePath();
+}
+
+function checkDefeat() {
+  for (let i = 0; i < bubbles.length; i++) {
+    const b = bubbles[i];
+    if (b.y + 25 >= 600) {
+      playing = false;
+    }
+  }
+}
+
+function keyHandler() {
+  if (keys.ArrowLeft && player.angle > -85) {
+    player.angle--;
+    player.rotate();
+  }
+  if (keys.ArrowRight && player.angle < 85) {
+    player.angle++;
+    player.rotate();
+  }
+  if (keys.Space && bullets.length) {
+    bullets[0].direction = player.angle;
+    bullets[0].live = true;
+  }
+}
+
+// Custom game over popup and restart handling
+function gameOver() {
+  const overlay = document.createElement("div");
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.backgroundColor = "rgba(0, 0, 0, 0.8)";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.zIndex = "1000";
+
+  const popup = document.createElement("div");
+  popup.style.width = "300px";
+  popup.style.padding = "20px";
+  popup.style.backgroundColor = "#fff";
+  popup.style.borderRadius = "10px";
+  popup.style.textAlign = "center";
+  popup.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)";
+
+  const heading = document.createElement("h1");
+  heading.textContent = "Game Over!";
+  heading.style.color = "#333";
+  heading.style.marginTop = "0";
+
+  const scoreDisplay = document.createElement("p");
+  scoreDisplay.textContent = `Your score: ${score}`;
+  scoreDisplay.style.color = "#666";
+
+  const restartButton = document.createElement("button");
+  restartButton.textContent = "Restart";
+  restartButton.style.padding = "10px 20px";
+  restartButton.style.marginTop = "20px";
+  restartButton.style.cursor = "pointer";
+  restartButton.style.border = "none";
+  restartButton.style.borderRadius = "5px";
+  restartButton.style.color = "#fff";
+  restartButton.style.backgroundColor = "#007BFF";
+  restartButton.onclick = function() {
+    document.body.removeChild(overlay);
+    restartGame();
+  };
+
+  popup.appendChild(heading);
+  popup.appendChild(scoreDisplay);
+  popup.appendChild(restartButton);
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
+}
+
+function updatePointerPosition() {
+  // Assuming the shooting bubble position is at the bottom center of the canvas
+  rotatable.style.left = (canvas.offsetLeft + canvas.width / 2 - rotatable.width / 2) + 'px';
+  rotatable.style.bottom = '60px'; // Adjust this value based on the size of your shooting bubble and desired visual offset
+}
+
+
+function restartGame() {
+  score = 0;
+  bubbles = [];
+  playing = true;
+  create();
+  sketch();
+  render();
+}
+//  #endregion
+
+
+</script>
+</body>
+</html>
+
+
