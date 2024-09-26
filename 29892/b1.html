@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candy Crush</title>
+<style>
+    #gameBoard {
+        width: 400px;
+        height: 400px;
+        display: grid;
+        grid-template-columns: repeat(8, 50px);
+        grid-template-rows: repeat(8, 50px);
+        gap: 2px;
+        background: #000;
+        padding: 10px;
+        border: 2px solid #333;
+    }
+    .candy {
+        width: 50px;
+        height: 50px;
+        cursor: grab;
+        background-size: cover;
+    }
+    #score {
+        margin-top: 20px;
+        font-size: 20px;
+    }
+</style>
+</head>
+<body>
+
+<div id="gameBoard"></div>
+<div id="score">Score: <span id="scoreValue">0</span></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const board = document.getElementById('gameBoard');
+    const scoreDisplay = document.getElementById('scoreValue');
+    let score = 0;
+    const colors = [
+        'blue', 'green', 'orange', 'purple', 'red', 'yellow'
+    ];
+    const candyImages = {
+        'blue': 'https://raw.githubusercontent.com/kubowania/candy-crush/master/images/blue-candy.png',
+        'green': 'https://github.com/kubowania/candy-crush/blob/master/images/green-candy.png?raw=true',
+        'orange': 'https://github.com/kubowania/candy-crush/blob/master/images/orange-candy.png?raw=true',
+        'purple': 'https://github.com/kubowania/candy-crush/blob/master/images/purple-candy.png?raw=true',
+        'red': 'https://github.com/kubowania/candy-crush/blob/master/images/red-candy.png?raw=true',
+        'yellow': 'https://github.com/kubowania/candy-crush/blob/master/images/yellow-candy.png?raw=true'
+    };
+    let grid = createGrid(8, 8);
+
+    function createGrid(rows, cols) {
+        return Array(rows).fill().map(() => Array(cols).fill(null));
+    }
+
+    function renderBoard() {
+        board.innerHTML = '';
+        grid.forEach((row, i) => {
+            row.forEach((candy, j) => {
+                if (candy) {
+                    const div = document.createElement('div');
+                    div.className = 'candy';
+                    div.style.backgroundImage = `url(${candyImages[candy]})`;
+                    div.dataset.row = i;
+                    div.dataset.col = j;
+                    div.draggable = true;
+                    div.addEventListener('dragstart', dragStart);
+                    div.addEventListener('dragover', dragOver);
+                    div.addEventListener('dragenter', dragEnter);
+                    div.addEventListener('dragleave', dragLeave);
+                    div.addEventListener('drop', dragDrop);
+                    div.addEventListener('dragend', dragEnd);
+                    board.appendChild(div);
+                }
+            });
+        });
+    }
+
+    function fillBoard() {
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 8; j++) {
+                if (!grid[i][j]) {
+                    grid[i][j] = colors[Math.floor(Math.random() * colors.length)];
+                }
+            }
+        }
+        renderBoard();
+        checkMatches();
+    }
+
+    function dragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.dataset.row + ',' + e.target.dataset.col);
+    }
+
+    function dragOver(e) {
+        e.preventDefault();
+    }
+
+    function dragEnter(e) {
+        e.preventDefault();
+    }
+
+    function dragLeave(e) {
+        // Optional: Reset any visual cues
+    }
+
+    function dragDrop(e) {
+        e.preventDefault();
+        let [sourceRow, sourceCol] = e.dataTransfer.getData('text').split(',').map(Number);
+        let targetRow = parseInt(e.target.dataset.row);
+        let targetCol = parseInt(e.target.dataset.col);
+        swapCandies(sourceRow, sourceCol, targetRow, targetCol);
+    }
+
+    function dragEnd(e) {
+        // Reset or cleanup if needed
+    }
+
+    function swapCandies(row1, col1, row2, col2) {
+        if (Math.abs(row1 - row2) + Math.abs(col1 - col2) !== 1) return; // Only adjacent swaps
+        [grid[row1][col1], grid[row2][col2]] = [grid[row2][col2], grid[row1][col1]];
+        renderBoard();
+        if (!checkMatches()) {
+            // If no match, swap back
+            [grid[row1][col1], grid[row2][col2]] = [grid[row2][col2], grid[row1][col1]];
+            renderBoard();
+        } else {
+            // Handle matches, then drop new candies
+            setTimeout(() => {
+                dropCandies();
+                checkMatches(); // Check for chain reactions
+            }, 500);
+        }
+    }
+
+    function checkMatches() {
+        let matched = false;
+        for (let i = 0; i < 8; i++) {
+            for (let j = 0; j < 6; j++) { // 6 because we check 3 in a row
+                if (grid[i][j] && grid[i][j] === grid[i][j+1] && grid[i][j] === grid[i][j+2]) {
+                    grid[i][j] = grid[i][j+1] = grid[i][j+2] = null;
+                    matched = true;
+                    score++;
+                }
+                if (grid[j][i] && grid[j][i] === grid[j+1][i] && grid[j][i] === grid[j+2][i]) {
+                    grid[j][i] = grid[j+1][i] = grid[j+2][i] = null;
+                    matched = true;
+                    score++;
+                }
+            }
+        }
+        if (matched) {
+            scoreDisplay.textContent = score;
+        }
+        return matched;
+    }
+
+    function dropCandies() {
+        for (let j = 0; j < 8; j++) {
+            for (let i = 7; i > 0; i--) {
+                if (!grid[i][j]) {
+                    for (let k = i - 1; k >= 0; k--) {
+                        if (grid[k][j]) {
+                            grid[i][j] = grid[k][j];
+                            grid[k][j] = null;
+                            break;
+                        }
+                    }
+                }
+            }
+            // Fill top rows with new candies if empty
+            for (let i = 0; i < 8; i++) {
+                if (!grid[i][j]) grid[i][j] = colors[Math.floor(Math.random() * colors.length)];
+            }
+        }
+        renderBoard();
+    }
+
+    fillBoard();
+});
+</script>
+
+</body>
+</html>

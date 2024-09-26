@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Candy Crush</title>
+<style>
+    #game-board {
+        width: 400px;
+        height: 400px;
+        border: 2px solid #000;
+        position: relative;
+    }
+    .candy {
+        width: 50px;
+        height: 50px;
+        position: absolute;
+        background-size: cover;
+        transition: top 0.3s, left 0.3s;
+    }
+</style>
+</head>
+<body>
+<div id="game-board"></div>
+<script>
+    const board = document.getElementById('game-board');
+    const candies = [
+        'blue-candy.png', 'green-candy.png', 'orange-candy.png', 'purple-candy.png',
+        'red-candy.png', 'yellow-candy.png'
+    ];
+    let grid = Array(8).fill().map(() => Array(8).fill(null));
+    let score = 0;
+
+    // Initialize board with candies
+    function initBoard() {
+        for(let y = 0; y < 8; y++) {
+            for(let x = 0; x < 8; x++) {
+                const candy = document.createElement('div');
+                candy.className = 'candy';
+                candy.style.backgroundImage = `url('https://raw.githubusercontent.com/kubowania/candy-crush/master/images/${candies[Math.floor(Math.random() * candies.length)]}')`;
+                candy.style.left = `${x * 50}px`;
+                candy.style.top = `${y * 50}px`;
+                candy.dataset.x = x;
+                candy.dataset.y = y;
+                grid[y][x] = candy;
+                board.appendChild(candy);
+            }
+        }
+        setupDragDrop();
+    }
+
+    function setupDragDrop() {
+        let dragged;
+
+        function dragStart(e) {
+            dragged = this;
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function dragOver(e) {
+            e.preventDefault();
+        }
+
+        function drop(e) {
+            e.preventDefault();
+            const target = e.target.closest('.candy');
+            if (target && canSwap(dragged, target)) {
+                swapCandies(dragged, target);
+                if (!checkMatches()) {
+                    // If no match, swap back
+                    setTimeout(() => swapCandies(dragged, target), 300);
+                } else {
+                    handleMatches();
+                }
+            }
+        }
+
+        board.ondragover = dragOver;
+        board.ondrop = drop;
+        Array.from(board.children).forEach(candy => {
+            candy.draggable = true;
+            candy.ondragstart = dragStart;
+        });
+    }
+
+    function canSwap(candy1, candy2) {
+        const x1 = +candy1.dataset.x, y1 = +candy1.dataset.y;
+        const x2 = +candy2.dataset.x, y2 = +candy2.dataset.y;
+        return (Math.abs(x1 - x2) + Math.abs(y1 - y2) === 1);
+    }
+
+    function swapCandies(candy1, candy2) {
+        const tempX = candy1.dataset.x, tempY = candy1.dataset.y;
+        candy1.style.left = `${candy2.dataset.x * 50}px`;
+        candy1.style.top = `${candy2.dataset.y * 50}px`;
+        candy2.style.left = `${tempX * 50}px`;
+        candy2.style.top = `${tempY * 50}px`;
+        [candy1.dataset.x, candy2.dataset.x] = [candy2.dataset.x, tempX];
+        [candy1.dataset.y, candy2.dataset.y] = [candy2.dataset.y, tempY];
+        [grid[candy1.dataset.y][candy1.dataset.x], grid[candy2.dataset.y][candy2.dataset.x]] = [grid[candy2.dataset.y][candy2.dataset.x], grid[candy1.dataset.y][candy1.dataset.x]];
+    }
+
+    function checkMatches() {
+        let matched = false;
+        // Check for matches (horizontally and vertically)
+        for (let y = 0; y < 8; y++) {
+            for (let x = 0; x < 8; x++) {
+                if (x < 6 && grid[y][x].style.backgroundImage === grid[y][x+1].style.backgroundImage && grid[y][x].style.backgroundImage === grid[y][x+2].style.backgroundImage) {
+                    score++;
+                    matched = true;
+                }
+                if (y < 6 && grid[y][x].style.backgroundImage === grid[y+1][x].style.backgroundImage && grid[y][x].style.backgroundImage === grid[y+2][x].style.backgroundImage) {
+                    score++;
+                    matched = true;
+                }
+            }
+        }
+        return matched;
+    }
+
+    function handleMatches() {
+        // Remove matched candies, drop new ones, and check again
+        removeMatches();
+        dropCandies();
+        setTimeout(checkMatches, 300); // Delay to check for new matches after candies drop
+    }
+
+    function removeMatches() {
+        grid.forEach((row, y) => row.forEach((candy, x) => {
+            if (checkSurrounding(x, y)) {
+                board.removeChild(candy);
+            }
+        }));
+    }
+
+    function checkSurrounding(x, y) {
+        // Check if this candy is part of a match
+        // This function would need to be more sophisticated in practice
+        return false; // Placeholder
+    }
+
+    function dropCandies() {
+        for (let x = 0; x < 8; x++) {
+            let emptyY = 7;
+            for (let y = 7; y >= 0; y--) {
+                if (!grid[y][x]) {
+                    for (let yFill = y - 1; yFill >= 0; yFill--) {
+                        if (grid[yFill][x]) {
+                            swapCandies(grid[yFill][x], {dataset: {x: x, y: emptyY}, style: {}});
+                            emptyY--;
+                            break;
+                        }
+                    }
+                    if (emptyY >= y) {
+                        // Create new candy at top if no candy to drop down
+                        const newCandy = document.createElement('div');
+                        newCandy.className = 'candy';
+                        newCandy.style.backgroundImage = `url('https://raw.githubusercontent.com/kubowania/candy-crush/master/images/${candies[Math.floor(Math.random() * candies.length)]}')`;
+                        newCandy.dataset.x = x;
+                        newCandy.dataset.y = emptyY;
+                        newCandy.style.left = `${x * 50}px`;
+                        newCandy.style.top = `${emptyY * 50}px`;
+                        grid[emptyY][x] = newCandy;
+                        board.appendChild(newCandy);
+                        emptyY--;
+                    }
+                }
+            }
+        }
+    }
+
+    initBoard();
+</script>
+</body>
+</html>
