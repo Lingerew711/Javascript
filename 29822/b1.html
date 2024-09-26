@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Path Finder</title>
+<style>
+    #gameBoard {
+        width: 800px;
+        height: 600px;
+        border: 2px solid #000;
+        position: relative;
+        background: #f0f0f0;
+    }
+    .dot {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+    .start-dot { background: green; }
+    .normal-dot { background: yellow; }
+    .connected-dot { background: green; }
+    .line {
+        stroke-dasharray: 10,10;
+        animation: dash 5s linear infinite;
+    }
+    @keyframes dash {
+        to { stroke-dashoffset: 100; }
+    }
+    #score, #gameOver {
+        font-family: 'Arial', sans-serif;
+        margin: 10px;
+    }
+    #gameOver {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        padding: 20px;
+        border: 1px solid #ccc;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+</style>
+</head>
+<body>
+
+<div id="gameBoard"></div>
+<div id="score">Score: 0</div>
+<div id="gameOver">
+    <h2>Game Over!</h2>
+    <button onclick="startGame()">Play Again</button>
+</div>
+
+<script>
+    let dots = [];
+    let currentDot;
+    let score = 0;
+    let svgNS = "http://www.w3.org/2000/svg";
+    const board = document.getElementById('gameBoard');
+
+    function createDot(x, y, type = 'normal') {
+        let dot = document.createElement('div');
+        dot.className = `dot ${type === 'start' ? 'start-dot' : 'normal-dot'}`;
+        dot.style.left = `${x}px`;
+        dot.style.top = `${y}px`;
+        dot.onclick = () => selectDot(dot);
+        board.appendChild(dot);
+        return dot;
+    }
+
+    function startGame() {
+        document.getElementById('gameOver').style.display = 'none';
+        dots.forEach(dot => board.removeChild(dot));
+        dots = [];
+        score = 0;
+        updateScore();
+        initializeGame();
+    }
+
+    function initializeGame() {
+        for(let i = 0; i < 10; i++) { // Number of dots can be adjusted
+            dots.push(createDot(Math.random() * 780, Math.random() * 580, i === 0 ? 'start' : 'normal'));
+        }
+        currentDot = dots[0];
+        currentDot.classList.remove('start-dot');
+        currentDot.classList.add('connected-dot');
+    }
+
+    function selectDot(selectedDot) {
+        if (selectedDot === currentDot) return;
+        let nearest = findNearestUnvisitedDot(currentDot);
+        if (selectedDot === nearest) {
+            drawLine(currentDot, selectedDot);
+            currentDot = selectedDot;
+            selectedDot.classList.remove('normal-dot');
+            selectedDot.classList.add('connected-dot');
+            score += 1; // or calculate distance for score
+            updateScore();
+            if (dots.filter(d => d.classList.contains('normal-dot')).length === 0) {
+                endGame(true); // All dots connected
+            }
+        } else {
+            endGame(false); // Wrong dot selected
+        }
+    }
+
+    function findNearestUnvisitedDot(fromDot) {
+        return dots.filter(d => d !== fromDot && d.classList.contains('normal-dot'))
+            .reduce((nearest, dot) => {
+                let distToNearest = Math.hypot(fromDot.offsetLeft - nearest.offsetLeft, fromDot.offsetTop - nearest.offsetTop);
+                let distToDot = Math.hypot(fromDot.offsetLeft - dot.offsetLeft, fromDot.offsetTop - dot.offsetTop);
+                return distToDot < distToNearest ? dot : nearest;
+            }, dots[1]); // Assuming dots[1] is not the start dot
+    }
+
+    function drawLine(from, to) {
+        let line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('x1', from.style.left);
+        line.setAttribute('y1', from.style.top);
+        line.setAttribute('x2', to.style.left);
+        line.setAttribute('y2', to.style.top);
+        line.setAttribute('class', 'line');
+        line.setAttribute('stroke', 'green');
+        board.appendChild(line);
+    }
+
+    function updateScore() {
+        document.getElementById('score').innerText = `Score: ${score}`;
+    }
+
+    function endGame(success) {
+        document.getElementById('gameOver').style.display = 'block';
+        if (success) {
+            // Here you could handle moving to the next level
+            document.getElementById('gameOver').innerHTML = '<h2>Congratulations!</h2><p>You have connected all dots!</p><button onclick="startGame()">Next Level</button>';
+        }
+    }
+
+    startGame();
+</script>
+
+</body>
+</html>
