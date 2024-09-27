@@ -1,122 +1,203 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Brick Breaker Game</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        #gameCanvas { border: 1px solid black; display: block; margin: 20px auto; }
-        .controls, .info { text-align: center; margin: 10px 0; }
-        button { margin: 5px; }
-    </style>
+<meta charset="UTF-8">
+<title>Brick Breaker Game</title>
+<style>
+    #gameArea {
+        width: 600px;
+        height: 400px;
+        border: 2px solid black;
+        position: relative;
+        background: #f0f0f0;
+    }
+    .brick {
+        position: absolute;
+        width: 50px;
+        height: 20px;
+        background: red;
+    }
+    #ball {
+        width: 10px;
+        height: 10px;
+        background: white;
+        border-radius: 50%;
+        position: absolute;
+    }
+    #paddle {
+        width: 100px;
+        height: 10px;
+        background: white;
+        position: absolute;
+        bottom: 10px;
+    }
+    #status, #score {
+        margin-top: 10px;
+        font-family: Arial, sans-serif;
+    }
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.4);
+    }
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 50%;
+    }
+</style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="480" height="320"></canvas>
-    <div class="controls">
-        <button id="generateBoard">Generate Board</button>
-        <label><input type="checkbox" id="randomMode"> Random Bricks</label>
-        <label><input type="checkbox" id="aiMode"> AI Mode</label>
-        <label><input type="checkbox" id="scoreAttackMode"> Score Attack Mode</label>
-    </div>
-    <div class="info">
-        <span id="aiStatus"></span>
-        <span id="randomStatus"></span>
-        <span>Score: <span id="score">0</span></span>
-        <span>Lives: <span id="lives">3</span></span>
-    </div>
 
-    <script>
-    // Game initialization
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const ballRadius = 10;
-    let dx = 2, dy = -2;
-    let paddleHeight = 10, paddleWidth = 75;
-    let paddleX = (canvas.width - paddleWidth) / 2;
-    let rightPressed = false, leftPressed = false;
-    let bricks = [];
-    let brickRowCount = 5, brickColumnCount = 5, brickWidth = 75, brickHeight = 20, brickPadding = 10, brickOffsetTop = 30, brickOffsetLeft = 30;
-    let score = 0, lives = 3;
-    let isRandom = false, isAI = false, isScoreAttack = false;
+<div id="gameArea">
+    <div id="ball"></div>
+    <div id="paddle"></div>
+</div>
+<button id="generateBoard">Generate Board</button>
+<label><input type="checkbox" id="aiMode"> AI Mode</label>
+<label><input type="checkbox" id="randomMode"> Random Bricks</label>
+<label><input type="checkbox" id="scoreAttackMode"> Score Attack Mode</label>
+<div id="status"></div>
+<div id="score">Score: <span id="currentScore">0</span></div>
 
-    function createBricks(random = false) {
-        bricks = [];
-        for(let c=0; c<brickColumnCount; c++) {
-            bricks[c] = [];
-            for(let r=0; r<brickRowCount; r++) {
-                if (!random || Math.random() > 0.3) { // 70% chance of brick existing in random mode
-                    bricks[c][r] = { x: 0, y: 0, status: 1 };
-                }
-            }
+<div id="gameOverModal" class="modal">
+  <div class="modal-content">
+    <p>Game Over! Your Score: <span id="finalScore"></span></p>
+    <button onclick="restartGame()">Restart</button>
+  </div>
+</div>
+
+<script>
+let gameArea = document.getElementById('gameArea');
+let ball = document.getElementById('ball');
+let paddle = document.getElementById('paddle');
+let bricks = [];
+let ballSpeedX = 2, ballSpeedY = -2;
+let lives = 3;
+let score = 0;
+let aiMode = false;
+let randomMode = false;
+let scoreAttackMode = false;
+
+document.getElementById('aiMode').addEventListener('change', function() {
+    aiMode = this.checked;
+    document.getElementById('status').textContent = aiMode ? 'AI Mode: On' : 'AI Mode: Off';
+});
+
+document.getElementById('randomMode').addEventListener('change', function() {
+    randomMode = this.checked;
+    document.getElementById('status').textContent = randomMode ? 'Random Bricks: On' : 'Random Bricks: Off';
+});
+
+document.getElementById('scoreAttackMode').addEventListener('change', function() {
+    scoreAttackMode = this.checked;
+    if(scoreAttackMode) {
+        lives = Math.floor(Math.random() * 3) + 1;
+        document.getElementById('status').textContent = `Score Attack Mode: On, Lives: ${lives}`;
+    } else {
+        lives = 3;
+        document.getElementById('status').textContent = 'Score Attack Mode: Off, Lives: 3';
+    }
+});
+
+document.getElementById('generateBoard').addEventListener('click', function() {
+    if(randomMode) generateRandomBricks();
+});
+
+function generateRandomBricks() {
+    gameArea.innerHTML = ''; // Clear existing bricks
+    bricks = [];
+    for(let i = 0; i < 30; i++) {
+        let brick = document.createElement('div');
+        brick.className = 'brick';
+        brick.style.left = `${Math.random() * (gameArea.offsetWidth - 50)}px`;
+        brick.style.top = `${Math.random() * 300}px`;
+        gameArea.appendChild(brick);
+        bricks.push(brick);
+    }
+}
+
+function moveBall() {
+    let ballRect = ball.getBoundingClientRect();
+    let paddleRect = paddle.getBoundingClientRect();
+
+    // Ball movement
+    ball.style.left = `${parseFloat(ball.style.left || 0) + ballSpeedX}px`;
+    ball.style.top = `${parseFloat(ball.style.top || 0) + ballSpeedY}px`;
+
+    // Collision with walls
+    if(ballRect.right >= gameArea.clientWidth || ballRect.left <= 0) ballSpeedX = -ballSpeedX;
+    if(ballRect.top <= 0) ballSpeedY = -ballSpeedY;
+    if(ballRect.bottom >= gameArea.clientHeight) {
+        lives--;
+        if(lives <= 0) gameOver();
+        else resetBall();
+    }
+
+    // Collision with paddle
+    if(ballRect.bottom >= paddleRect.top && ballRect.right > paddleRect.left && ballRect.left < paddleRect.right) {
+        ballSpeedY = -ballSpeedY;
+    }
+
+    // Collision with bricks
+    bricks.forEach((brick, index) => {
+        let brickRect = brick.getBoundingClientRect();
+        if(ballRect.right > brickRect.left && ballRect.left < brickRect.right && 
+           ballRect.bottom > brickRect.top && ballRect.top < brickRect.bottom) {
+            gameArea.removeChild(brick);
+            bricks.splice(index, 1);
+            ballSpeedY = -ballSpeedY;
+            score++;
+            document.getElementById('currentScore').textContent = score;
+        }
+    });
+
+    if(aiMode) {
+        let centerOfPaddle = paddle.offsetLeft + paddle.offsetWidth / 2;
+        if(centerOfPaddle < ballRect.left) paddle.style.left = `${parseFloat(paddle.style.left || 0) + 2}px`;
+        else paddle.style.left = `${parseFloat(paddle.style.left || 0) - 2}px`;
+    }
+}
+
+function resetBall() {
+    ball.style.left = `${gameArea.clientWidth / 2 - 5}px`;
+    ball.style.top = `${gameArea.clientHeight - 40}px`;
+    ballSpeedY = -2;
+}
+
+function gameOver() {
+    document.getElementById('finalScore').textContent = score;
+    document.getElementById('gameOverModal').style.display = 'block';
+}
+
+function restartGame() {
+    document.getElementById('gameOverModal').style.display = 'none';
+    score = 0;
+    lives = scoreAttackMode ? Math.floor(Math.random() * 3) + 1 : 3;
+    document.getElementById('currentScore').textContent = score;
+    resetBall();
+    generateRandomBricks();
+}
+
+gameArea.addEventListener('mousemove', function(e) {
+    if(!aiMode) {
+        let relativeX = e.clientX - gameArea.offsetLeft;
+        if(relativeX > 0 && relativeX < gameArea.offsetWidth - paddle.offsetWidth) {
+            paddle.style.left = `${relativeX}px`;
         }
     }
+});
 
-    function drawBricks() {
-        for(let c=0; c<brickColumnCount; c++) {
-            for(let r=0; r<brickRowCount; r++) {
-                if(bricks[c][r].status === 1) {
-                    let brickX = (c*(brickWidth+brickPadding))+brickOffsetLeft;
-                    let brickY = (r*(brickHeight+brickPadding))+brickOffsetTop;
-                    bricks[c][r].x = brickX;
-                    bricks[c][r].y = brickY;
-                    ctx.beginPath();
-                    ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                    ctx.fillStyle = "#0095DD";
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            }
-        }
-    }
-
-    function drawBall() {
-        ctx.beginPath();
-        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    function drawPaddle() {
-        ctx.beginPath();
-        ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
-        ctx.fillStyle = "#FFFFFF";
-        ctx.fill();
-        ctx.closePath();
-    }
-
-    // ... [Additional functions for collision detection, AI movement, game loop, etc.]
-
-    // Event listeners for controls
-    document.getElementById('generateBoard').addEventListener('click', function() {
-        createBricks(document.getElementById('randomMode').checked);
-    });
-
-    document.getElementById('aiMode').addEventListener('change', function() {
-        isAI = this.checked;
-        document.getElementById('aiStatus').textContent = isAI ? 'AI Assist ON' : '';
-    });
-
-    document.getElementById('randomMode').addEventListener('change', function() {
-        document.getElementById('randomStatus').textContent = this.checked ? 'Random Bricks' : '';
-    });
-
-    document.getElementById('scoreAttackMode').addEventListener('change', function() {
-        isScoreAttack = this.checked;
-        if (isScoreAttack) lives = Math.floor(Math.random() * 3) + 1;
-        document.getElementById('lives').textContent = lives;
-    });
-
-    // Game loop would go here with draw and update functions
-    // AI logic for paddle movement would also be implemented
-
-    // Start the game loop
-    function gameLoop() {
-        // Game logic here
-        requestAnimationFrame(gameLoop);
-    }
-    gameLoop();
-
-    </script>
+// Initial setup
+resetBall();
+setInterval(moveBall, 10);
+</script>
 </body>
 </html>
