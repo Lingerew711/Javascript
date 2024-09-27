@@ -216,6 +216,7 @@ var letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L",
 var words = [];
 
 function load(theme) {
+    
 	var size = 220; 
 	for (var i = 0; i < size; i++) {
 		$(".letters").append("<span class='" + (i + 1) + "'>" + getRandomLetter() + "</span>"); 
@@ -601,10 +602,16 @@ function playAgain() {
 }
 
 
-function reset(){
-  var puzzle = document.getElementById("main");
+function reset() {
+  // Clear the game board
+  $(".letters").empty();  // Clears all letter elements
+  $(".words").empty();    // Clears all word elements
+  words = [];             // Resets the words array
+  pos = [];               // Clear positions to ensure fresh game start
+
+  // Reset display to initial state
   document.getElementById("on-load").style.display = "block";
-  puzzle.style.display = "none";
+  document.getElementById("main").style.display = "none";
 }
 
 function show(){}
