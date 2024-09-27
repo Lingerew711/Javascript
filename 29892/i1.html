@@ -20,6 +20,8 @@
 .grid div {
     height: 70px;
     width: 70px;
+    transition: transform 0.4s ease-in-out, background-image 0.4s ease-in-out;
+    background-color: transparent;
 }
 
 h3 {
@@ -124,6 +126,7 @@ function candyCrushGame() {
     function dragStart() {
         colorBeingDragged = this.style.backgroundImage;
         squareIdBeingDragged = parseInt(this.id);
+        this.style.opacity = '0.5';
         // this.style.backgroundImage = ''
     }
 
@@ -136,7 +139,7 @@ function candyCrushGame() {
     }
 
     function dragLeave() {
-        this.style.backgroundImage = "";
+        //this.style.backgroundImage = "";
     }
 
     function dragDrop() {
@@ -146,6 +149,7 @@ function candyCrushGame() {
         squares[
             squareIdBeingDragged
         ].style.backgroundImage = colorBeingReplaced;
+        this.style.opacity = '1';
     }
 
     function dragEnd() {
@@ -160,6 +164,7 @@ function candyCrushGame() {
 
         if (squareIdBeingReplaced && validMove) {
             squareIdBeingReplaced = null;
+            updateBoard(); 
         } else if (squareIdBeingReplaced && !validMove) {
             squares[
                 squareIdBeingReplaced
@@ -171,10 +176,32 @@ function candyCrushGame() {
             squares[
                 squareIdBeingDragged
             ].style.backgroundImage = colorBeingDragged;
+            squares[squareIdBeingDragged].style.opacity = '1';
     }
 
+    function createRandomCandy() {
+    return candyColors[Math.floor(Math.random() * candyColors.length)];
+}
+
+
+function moveIntoSquareBelow() {
+    for (let i = 0; i < 55; i++) { // Only up to the second-to-last row
+        if (squares[i + width].style.backgroundImage === "") {
+            squares[i + width].style.backgroundImage = squares[i].style.backgroundImage;
+            squares[i].style.backgroundImage = "";
+        }
+    }
+    // Handle the first row separately
+    for (let i = 0; i < width; i++) {
+        if (squares[i].style.backgroundImage === "") {
+            squares[i].style.backgroundImage = createRandomCandy();
+        }
+    }
+}
+
+
     //drop candies once some have been cleared
-    function moveIntoSquareBelow() {
+ /*   function moveIntoSquareBelow() {
         for (i = 0; i < 55; i++) {
             if (squares[i + width].style.backgroundImage === "") {
                 squares[i + width].style.backgroundImage =
@@ -191,7 +218,7 @@ function candyCrushGame() {
             }
         }
     }
-
+*/
     ///Checking for Matches
     //for row of Four
     function checkRowForFour() {
@@ -267,7 +294,7 @@ function candyCrushGame() {
     checkColumnForFour();
 
     //for row of Three
-    function checkRowForThree() {
+   /* function checkRowForThree() {
         for (i = 0; i < 61; i++) {
             let rowOfThree = [i, i + 1, i + 2];
             let decidedColor = squares[i].style.backgroundImage;
@@ -307,7 +334,7 @@ function candyCrushGame() {
         }
     }
     checkRowForThree();
-
+*/
     //for column of Three
     function checkColumnForThree() {
         for (i = 0; i < 47; i++) {
@@ -330,15 +357,45 @@ function candyCrushGame() {
             }
         }
     }
+
+
+
+// Enhanced checking functions to include immediate random generation for top row matches
+function checkRowForThree() {
+    for (let i = 0; i < 61; i++) {
+        let rowOfThree = [i, i + 1, i + 2];
+        let decidedColor = squares[i].style.backgroundImage;
+        const isBlank = squares[i].style.backgroundImage === "";
+
+        const notValid = [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55];
+        if (notValid.includes(i)) continue;
+
+        if (rowOfThree.every(index => squares[index].style.backgroundImage === decidedColor && !isBlank)) {
+            rowOfThree.forEach(index => {
+                squares[index].style.backgroundImage = "";
+                if (index < width) { // If the index is in the top row, immediately generate a new candy
+                    squares[index].style.backgroundImage = createRandomCandy();
+                }
+            });
+        }
+    }
+}
+checkRowForThree();
+
+// Ensure checks and updates happen after every move
+function updateBoard() {
+    moveIntoSquareBelow();
+    checkRowForFour();
+    checkColumnForFour();
+    checkRowForThree();
+    checkColumnForThree();
+}
+
     checkColumnForThree();
 
     // Checks carried out indefintely - Add Butotn to clear interval for best practise
     window.setInterval(function () {
-        checkRowForFour();
-        checkColumnForFour();
-        checkRowForThree();
-        checkColumnForThree();
-        moveIntoSquareBelow();
+        updateBoard();
     }, 100);
 }
 
