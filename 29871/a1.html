@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <style>
+        /* CSS for map, modals, and custom markers */
+        body { margin: 0; padding: 0; }
+        #map { height: 100vh; }
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 15% auto; padding: 20px;
+            border: 1px solid #888; width: 80%; max-width: 500px;
+        }
+        @keyframes fadeIn { from {opacity: 0} to {opacity: 1} }
+        .card {
+            background: #fff; border-radius: 2px; margin: 1rem;
+            padding: 1rem; box-shadow: 0 3px 6px rgba(0,0,0,0.16);
+        }
+        .event-marker { background: blue; }
+        .place-marker { background: green; }
+    </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <!-- Form for adding event or place description -->
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+<script>
+    // Initialize map
+    var map = L.map('map').setView([51.505, -0.09], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Custom markers
+    var eventIcon = L.divIcon({className: 'event-marker'});
+    var placeIcon = L.divIcon({className: 'place-marker'});
+
+    // Function to open modal
+    function openModal(type) {
+        document.getElementById('modal').style.display = 'block';
+        // Populate modal with form based on type (event or place)
+    }
+
+    // Map click event
+    map.on('click', function(e) {
+        openModal('add'); // Open modal to add new item
+    });
+
+    // Functionality for adding, editing, and deleting markers would go here
+    // Real-time updates would require setting timers or using WebSockets
+
+    // Close modal function
+    function closeModal() {
+        document.getElementById('modal').style.display = 'none';
+    }
+
+    // Here would be additional JavaScript for handling form submission, marker management, etc.
+</script>
+
+</body>
+</html>

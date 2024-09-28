@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Event Mapper</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            font-family: 'Open Sans', sans-serif;
+        }
+        #mapid { height: 98vh; }
+        .leaflet-popup {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ccc;
+            border-radius: 12px;
+            box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+        }
+        .leaflet-popup-content-wrapper {
+            padding: 5px 20px;
+        }
+        .leaflet-popup-tip-container {
+            width: 20px;
+            height: 11px;
+        }
+        .leaflet-popup-tip {
+            background: transparent;
+            border-top-color: rgba(255, 255, 255, 0.8);
+        }
+        .event-marker, .place-marker {
+            width: 30px;
+            height: 42px;
+            background-size: 100% 100%;
+        }
+        .event-marker {
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Google_Maps_Pin.svg/390px-Google_Maps_Pin.svg.png');
+            filter: hue-rotate(240deg); /* Blue hue */
+        }
+        .place-marker {
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Google_Maps_Pin.svg/390px-Google_Maps_Pin.svg.png');
+            filter: hue-rotate(90deg); /* Green hue */
+        }
+    </style>
+</head>
+<body>
+    <div id="mapid"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script>
+    const map = L.map('mapid').setView([51.505, -0.09], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    let events = JSON.parse(localStorage.getItem("events")) || [];
+    let markers = [];
+
+    function checkExpiredEvents() {
+        const currentTime = new Date().getTime();
+        events.forEach((event, index) => {
+            if (event.type === 'Event' && new Date(event.endTime).getTime() < currentTime) {
+                map.removeLayer(markers[index]);
+                events.splice(index, 1); // Remove the event from the array
+            }
+        });
+        localStorage.setItem("events", JSON.stringify(events)); // Update local storage
+    }
+
+    setInterval(checkExpiredEvents, 60000); // Check every minute
+
+    events.forEach((event, index) => {
+        addMarker(event, index);
+    });
+
+    map.on('click', function (e) {
+        Swal.fire({
+            title: 'Select Category',
+            input: 'select',
+            inputOptions: {
+                'event': 'Event',
+                'place': 'Place Description'
+            },
+            inputPlaceholder: 'Select a category',
+            showCancelButton: true,
+            allowOutsideClick: false // Prevent closing when clicking outside
+        }).then((result) => {
+            if (result.value) {
+                if (result.value === 'event') {
+                    addEventDetails(e.latlng, 'event');
+                } else {
+                    addEventDetails(e.latlng, 'place');
+                }
+            }
+        });
+    });
+
+    function addEventDetails(latlng, type) {
+        if (type === 'event') {
+            Swal.fire({
+                title: 'Describe the Event',
+                html: '<input id="event-desc" class="swal2-input" placeholder="Description">' +
+                      '<input id="event-time" class="swal2-input" placeholder="End Time">',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const desc = document.getElementById('event-desc').value;
+                    const endTime = document.getElementById('event-time').value;
+                    return { desc: desc, endTime: endTime };
+                },
+                didOpen: () => {
+                    flatpickr("#event-time", {
+                        enableTime: true,
+                        dateFormat: "Y-m-d H:i",
+                        minDate: "today"
+                    });
+                },
+                showCancelButton: true
+            }).then((result) => {
+                if (result.value) {
+                    const newEvent = {
+                        lat: latlng.lat,
+                        lon: latlng.lng,
+                        desc: result.value.desc,
+                        endTime: result.value.endTime,
+                        type: 'Event'
+                    };
+                    events.push(newEvent);
+                    addMarker(newEvent, events.length - 1);
+                    localStorage.setItem("events", JSON.stringify(events));
+                }
+            });
+        } else {
+            Swal.fire({
+                title: 'Describe the Place',
+                input: 'text',
+                inputLabel: 'Place description',
+                confirmButtonText: 'Add Place',
+                showCancelButton: true,
+            }).then((result) => {
+                if (result.value) {
+                    const newPlace = {
+                        lat: latlng.lat,
+                        lon: latlng.lng,
+                        desc: result.value,
+                        type: 'Place'
+                    };
+                    events.push(newPlace);
+                    addMarker(newPlace, events.length - 1);
+                    localStorage.setItem("events", JSON.stringify(events));
+                }
+            });
+        }
+    }
+
+    function addMarker(event, index) {
+        const iconUrl = event.type === 'Event' ? 'event-marker' : 'place-marker';
+        const marker = L.marker([event.lat, event.lon], {
+            icon: L.divIcon({
+                className: iconUrl,
+                iconSize: [30, 42],
+                iconAnchor: [15, 42],
+                popupAnchor: [0, -42],
+                html: `<i class="fas fa-thumbtack" style="font-size:24px;color:${event.type === 'Event' ? 'blue' : 'green'};"></i>`
+            })
+        }).addTo(map)
+        .bindPopup(`<i class="fas fa-edit" onclick="editEvent(${index})" style="cursor:pointer; margin: 5px; color: green;"></i> <i class="fas fa-trash-alt" onclick="deleteEvent(${index}, this)" style="cursor:pointer;color:red; margin: 5px;"></i> <p>${event.desc}</p><p> ${ event.type === 'Event' ? event.endTime : ''}</p> `);
+
+        markers[index] = marker;
+    }
+
+    function editEvent(index) {
+        const marker = markers[index];
+        const event = events[index];
+        if (event.type === 'Event') {
+            Swal.fire({
+                title: 'Edit the Event',
+                html: '<input id="event-desc" class="swal2-input" value="' + event.desc + '">' +
+                      '<input id="event-time" class="swal2-input" value="' + event.endTime + '">',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const desc = document.getElementById('event-desc').value;
+                    const endTime = document.getElementById('event-time').value;
+                    return { desc: desc, endTime: endTime };
+                },
+                didOpen: () => {
+                    flatpickr("#event-time", {
+                        enableTime: true,
+                        dateFormat: "Y-m-d H:i",
+                        minDate: "today"
+                    });
+                },
+                showCancelButton: true,
+                confirmButtonText: 'Save changes',
+                allowOutsideClick: false // Prevent closing when clicking outside
+            }).then((result) => {
+                if (result.value) {
+                    event.desc = result.value.desc;
+                    event.endTime = result.value.endTime;
+                    marker.getPopup().setContent(`<i class="fas fa-edit" onclick="editEvent(${index})" style="cursor:pointer; margin: 5px; color: green;"></i> <i class="fas fa-trash-alt" onclick="deleteEvent(${index}, this)" style="cursor:pointer;color:red; margin: 5px;"></i> <p>${event.desc}</p>`);
+                    localStorage.setItem("events", JSON.stringify(events));
+                }
+            });
+        } else {
+            Swal.fire({
+                title: 'Edit the Place',
+                input: 'text',
+                inputValue: event.desc,
+                showCancelButton: true,
+                confirmButtonText: 'Save changes',
+                allowOutsideClick: false // Prevent closing when clicking outside
+            }).then((result) => {
+                if (result.value) {
+                    event.desc = result.value;
+                    marker.getPopup().setContent(`<i class="fas fa-edit" onclick="editEvent(${index})" style="cursor:pointer; margin: 5px; color: green;"></i> <i class="fas fa-trash-alt" onclick="deleteEvent(${index}, this)" style="cursor:pointer;color:red; margin: 5px;"></i> <p>${event.desc}</p>`);
+                    localStorage.setItem("events", JSON.stringify(events));
+                }
+            });
+        }
+    }
+
+    function deleteEvent(index, button) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            allowOutsideClick: false // Prevent closing when clicking outside
+        }).then((result) => {
+            if (result.isConfirmed) {
+                events.splice(index, 1); // Remove the event from the array
+                localStorage.setItem("events", JSON.stringify(events)); // Update local storage
+                map.removeLayer(markers[index]); // Remove the marker from the map
+                Swal.fire(
+                    'Deleted!',
+                    'Your event has been deleted.',
+                    'success'
+                );
+            }
+        });
+    }
+    </script>
+</body>
+</html>

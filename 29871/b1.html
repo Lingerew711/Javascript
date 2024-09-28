@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
+        #map { height: 100vh; }
+        .leaflet-popup-content { width: 200px; }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin: 10px;
+            padding: 15px;
+            transition: transform 0.3s;
+        }
+        .card:hover { transform: scale(1.05); }
+        .popup-content {
+            background: white;
+            border-radius: 5px;
+            padding: 20px;
+            width: 250px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .button:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div id="card-container"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([51.505, -0.09], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        let markers = {};
+        let cards = {};
+
+        function addMarker(latlng, type, data) {
+            const color = type === 'event' ? 'red' : 'blue';
+            const marker = L.marker(latlng, {icon: L.icon({
+                iconUrl: `https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-${color}.png`,
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+            })}).addTo(map);
+
+            markers[marker._leaflet_id] = {type, data, marker};
+            marker.on('click', showMarkerPopup);
+            updateCardView(marker);
+        }
+
+        function showMarkerPopup(e) {
+            const marker = e.target;
+            const content = document.createElement('div');
+            content.className = 'popup-content';
+            content.innerHTML = `<h4>${markers[marker._leaflet_id].type}</h4>
+                                 <p>${markers[marker._leaflet_id].data.description}</p>
+                                 <button onclick="editMarker(${marker._leaflet_id})" class="button">Edit</button>
+                                 <button onclick="confirmDelete(${marker._leaflet_id})" class="button">Delete</button>`;
+            marker.bindPopup(content).openPopup();
+        }
+
+        function updateCardView(marker) {
+            const container = document.getElementById('card-container');
+            if (!cards[marker._leaflet_id]) {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `<h4>${markers[marker._leaflet_id].type}</h4>
+                                  <p>${markers[marker._leaflet_id].data.description}</p>
+                                  <button onclick="toggleCardVisibility(${marker._leaflet_id})">Toggle</button>`;
+                cards[marker._leaflet_id] = card;
+                container.appendChild(card);
+            } else {
+                // Update existing card content if needed
+            }
+        }
+
+        function toggleCardVisibility(id) {
+            const card = cards[id];
+            // Implement visibility toggle logic here
+        }
+
+        function editMarker(id) {
+            // Implement edit logic here, possibly with another popup or form
+        }
+
+        function confirmDelete(id) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                deleteMarker(id);
+            }
+        }
+
+        function deleteMarker(id) {
+            map.removeLayer(markers[id].marker);
+            delete markers[id];
+            document.getElementById('card-container').removeChild(cards[id]);
+            delete cards[id];
+        }
+
+        map.on('click', function(e) {
+            // Implement the popup for adding new event or place description here
+            const popup = L.popup()
+                .setLatLng(e.latlng)
+                .setContent('<div class="popup-content"><h3>Add New</h3><button onclick="addEventHere(' + e.latlng.lat + ',' + e.latlng.lng + ')">Event</button><button onclick="addPlaceHere(' + e.latlng.lat + ',' + e.latlng.lng + ')">Place</button></div>')
+                .openOn(map);
+        });
+
+        function addEventHere(lat, lng) {
+            // Logic to add an event, including duration
+            const duration = prompt("Enter event duration in minutes:");
+            const description = prompt("Enter event description:");
+            const eventData = {description, duration: duration * 60000}; // Convert to milliseconds
+            addMarker([lat, lng], 'event', eventData);
+            setTimeout(() => {
+                // Here you would find and delete the event marker after duration
+            }, eventData.duration);
+        }
+
+        function addPlaceHere(lat, lng) {
+            const description = prompt("Enter place description:");
+            addMarker([lat, lng], 'place', {description});
+        }
+    </script>
+</body>
+</html>

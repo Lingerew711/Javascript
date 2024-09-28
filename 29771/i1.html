@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PuzzLE Maker</title>
+    <title>PuzzLe Maker</title>
 
     <style>
         html,body{
@@ -98,7 +98,7 @@ margin:auto;
 width:100px;
 height:100px;
     
-    display:inline-block;
+display:inline-block;
 vertical-align:top;
  
 }
@@ -650,7 +650,7 @@ function fixPiece(p){
         setTimeout(final,1500)
     }
 }
-function placePiece(p){
+/*function placePiece(p){
   
     p.style.zIndex = zIndex++
     p.zIndexPrevi=p.style.zIndex
@@ -673,7 +673,33 @@ function dropPiece(){
     
     pezaSeleccionada=false
     
+}*/
+
+function placePiece(p){
+    if (!p) return;  // Check if p is undefined or null
+    p.style.zIndex = ++zIndex;  // Increment zIndex then use it
+    p.zIndexPrevi = p.style.zIndex;  // Store the previous zIndex
+    
+    document.querySelectorAll(".position").forEach(function(e, i){
+        if ((p.position().left > e.offsetLeft && p.position().left < e.offsetLeft + 100) &&
+            (p.position().top > e.offsetTop && p.position().top < e.offsetTop + 100) && !e.occupied){
+            p.style.left = e.offsetLeft + "px";
+            p.style.top = e.offsetTop + "px";
+            e.occupied = true;
+            p.occupy = i;
+            if (e.index == p.index && p.getAttribute("classangle") == "g0") fixPiece(p);
+        }
+    });
 }
+
+function dropPiece(){
+    if (pezaSeleccionada) {
+        placePiece(pezaSeleccionada);
+        pezaSeleccionada = false;
+    }
+}
+
+
 document.addEventListener('mousemove', function(event) {
     event.preventDefault();
     if (pezaSeleccionada) {
