@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tetris Game</title>
+<style>
+  #gameCanvas {
+    border: 2px solid #333;
+    width: 300px;
+    height: 600px;
+    margin: auto;
+    display: grid;
+    grid-template: repeat(30, 1fr) / repeat(15, 1fr);
+    background: #f0f0f0;
+  }
+  .block {
+    border: 1px solid #e0e0e0;
+    background-color: #fff;
+  }
+  .tetromino {
+    border: 1px solid rgba(0,0,0,0.2);
+  }
+  button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #score {
+    text-align: center;
+    font-size: 20px;
+    margin-top: 10px;
+  }
+  body {
+    font-family: 'Arial', sans-serif;
+    background: #2c3e50;
+    color: white;
+  }
+</style>
+</head>
+<body>
+
+<div id="gameArea">
+  <div id="gameCanvas"></div>
+  <div id="score">Score: 0</div>
+  <button onclick="startGame()">Start</button>
+  <button onclick="pauseResumeGame()" id="pauseResume">Pause</button>
+</div>
+
+<script>
+// Game Constants
+const COLS = 15;
+const ROWS = 30;
+const BLOCK_SIZE = 20; // Assuming each block is 20px for simplicity
+
+// Tetromino shapes
+const SHAPES = [
+  [[1,1,1,1]], // I
+  [[1,1],[1,1]], // O
+  [[1,1,1],[0,1,0]], // T
+  [[1,1,1],[0,0,1]], // J
+  [[1,1,1],[1,0,0]], // L
+  [[0,1,1],[1,1,0]], // S
+  [[1,1,0],[0,1,1]]  // Z
+];
+
+let canvas = document.getElementById('gameCanvas');
+let scoreDisplay = document.getElementById('score');
+let gameState = 'paused';
+let currentPiece, currentX, currentY, score = 0, interval;
+
+function createPiece(type) {
+  return { shape: SHAPES[type], color: `hsl(${Math.random() * 360}, 100%, 50%)` };
+}
+
+function draw() {
+  canvas.innerHTML = '';
+  for(let y = 0; y < ROWS; y++) {
+    for(let x = 0; x < COLS; x++) {
+      if (board[y][x]) {
+        let block = document.createElement('div');
+        block.className = 'block tetromino';
+        block.style.backgroundColor = board[y][x];
+        canvas.appendChild(block);
+      } else {
+        let block = document.createElement('div');
+        block.className = 'block';
+        canvas.appendChild(block);
+      }
+    }
+  }
+}
+
+function drop() {
+  if (canMove(0, 1)) {
+    currentY++;
+  } else {
+    lockPiece();
+    clearLines();
+    currentPiece = createPiece(Math.floor(Math.random() * SHAPES.length));
+    currentX = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
+    currentY = 0;
+    if (!canMove(0, 0)) gameOver();
+  }
+  draw();
+}
+
+function canMove(dx, dy) {
+  for (let y = 0; y < currentPiece.shape.length; y++) {
+    for (let x = 0; x < currentPiece.shape[y].length; x++) {
+      if (currentPiece.shape[y][x]) {
+        let newX = currentX + x + dx;
+        let newY = currentY + y + dy;
+        if (newX < 0 || newX >= COLS || newY >= ROWS || (newY >= 0 && board[newY][newX])) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function move(dx) {
+  if (canMove(dx, 0)) currentX += dx;
+}
+
+function rotate() {
+  let rotated = currentPiece.shape[0].map((_, index) => 
+    currentPiece.shape.map(row => row[index]).reverse()
+  );
+  let original = currentPiece.shape;
+  currentPiece.shape = rotated;
+  if (!canMove(0, 0)) currentPiece.shape = original; // Revert if can't rotate
+}
+
+function lockPiece() {
+  currentPiece.shape.forEach((row, y) => {
+    row.forEach((value, x) => {
+      if (value && currentY + y >= 0) {
+        board[currentY + y][currentX + x] = currentPiece.color;
+      }
+    });
+  });
+}
+
+function clearLines() {
+  let linesCleared = 0;
+  for (let y = ROWS - 1; y >= 0; y--) {
+    if (board[y].every(cell => cell !== 0)) {
+      board.splice(y, 1);
+      board.unshift(new Array(COLS).fill(0));
+      linesCleared++;
+      y++; // Recheck this row since it's now a new line
+    }
+  }
+  if (linesCleared > 0) {
+    score += linesCleared * 100;
+    scoreDisplay.textContent = 'Score: ' + score;
+  }
+}
+
+function gameOver() {
+  alert('Game Over! Your score: ' + score);
+  resetGame();
+}
+
+function resetGame() {
+  clearInterval(interval);
+  board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+  score = 0;
+  scoreDisplay.textContent = 'Score: 0';
+  currentPiece = createPiece(Math.floor(Math.random() * SHAPES.length));
+  currentX = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
+  currentY = 0;
+  gameState = 'paused';
+  document.getElementById('pauseResume').textContent = 'Pause';
+}
+
+function startGame() {
+  if (gameState === 'paused') {
+    interval = setInterval(drop, 500);
+    gameState = 'playing';
+  }
+}
+
+function pauseResumeGame() {
+  if (gameState === 'playing') {
+    clearInterval(interval);
+    gameState = 'paused';
+    document.getElementById('pauseResume').textContent = 'Resume';
+  } else if (gameState === 'paused') {
+    interval = setInterval(drop, 500);
+    gameState = 'playing';
+    document.getElementById('pauseResume').textContent = 'Pause';
+  }
+}
+
+document.addEventListener('keydown', function(event) {
+  if (gameState !== 'playing') return;
+  switch(event.key) {
+    case 'ArrowLeft': move(-1); break;
+    case 'ArrowRight': move(1); break;
+    case 'ArrowDown': drop(); break;
+    case 'ArrowUp': rotate(); break;
+  }
+});
+
+// Initialize game
+let board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+currentPiece = createPiece(Math.floor(Math.random() * SHAPES.length));
+currentX = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
+currentY = 0;
+
+// Initial draw
+draw();
+</script>
+
+</body>
+</html>
